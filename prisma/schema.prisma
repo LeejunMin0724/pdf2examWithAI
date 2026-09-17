@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Document {
+  id             String         @id @default(cuid())
+  originalName   String
+  storageKey     String
+  extractionState String         @default("PENDING")
+  pageCount      Int?
+  extractedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  pages          DocumentPage[]
+  questionSets   QuestionSet[]
+}
+
+model DocumentPage {
+  id         String   @id @default(cuid())
+  documentId String
+  pageNumber Int
+  text       String
+  createdAt  DateTime @default(now())
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, pageNumber])
+}
+
+model QuestionSet {
+  id             String           @id @default(cuid())
+  documentId     String
+  questionType   String
+  difficulty     String
+  requestedCount Int
+  status         String           @default("PENDING")
+  // Actual Gemini model that generated this set (set on COMPLETE; null for
+  // legacy/sample sets). Lets the UI show the real model without hardcoding.
+  generatedModel      String?
+  generatedModelName  String?
+  generatedFallback   Boolean?
+  createdAt      DateTime         @default(now())
+  document       Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  questions      Question[]
+  attempts       Attempt[]
+}
+
+model Question {
+  id              String       @id @default(cuid())
+  questionSetId   String
+  type            String
+  question        String
+  options         Json?
+  correctAnswer   String?
+  acceptedAnswers Json?
+  keywords        Json?
+  modelAnswer     String?
+  gradingRubric   Json?
+  maxScore        Float        @default(1)
+  explanation     String
+  difficulty      String
+  sourcePage      Int?
+  testedConcept   String?
+  reasoningType   String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  questionSet     QuestionSet  @relation(fields: [questionSetId], references: [id], onDelete: Cascade)
+  answers         Answer[]
+}
+
+model Attempt {
+  id            String   @id @default(cuid())
+  questionSetId String
+  startedAt     DateTime @default(now())
+  submittedAt   DateTime?
+  totalScore    Float?
+  maxScore      Float?
+  questionSet   QuestionSet @relation(fields: [questionSetId], references: [id], onDelete: Cascade)
+  answers       Answer[]
+}
+
+model Answer {
+  id            String        @id @default(cuid())
+  attemptId     String
+  questionId    String
+  response      String
+  isCorrect     Boolean?
+  score         Float?
+  feedback      String?
+  gradingStatus String        @default("NOT_REQUIRED")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  attempt       Attempt       @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question      Question      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+}
+
+model AIRequestLog {
+  id           String   @id @default(cuid())
+  operation    String
+  provider     String
+  model        String
+  inputTokens  Int?
+  outputTokens Int?
+  success      Boolean
+  errorCode    String?
+  createdAt    DateTime @default(now())
+}

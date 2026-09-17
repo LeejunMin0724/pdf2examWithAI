@@ -1,0 +1,643 @@
+APPLE-INSPIRED DESIGN GUIDELINES
+01. PRODUCT STRUCTURE
+
+Project: PDF-based University Exam Study Web App
+
+==================================================
+0. PURPOSE
+==================================================
+
+이 문서는 웹앱의 전체 구조와 정보 구조를 정의한다.
+시각적인 스타일(CSS, 색상, 폰트, 그림자 등)은 이 문서의 범위가 아니다.
+
+핵심 목표:
+- 사용자가 강의 PDF를 업로드하고 시험을 생성하는 과정이 자연스럽게 이어져야 한다.
+- 각 화면은 하나의 명확한 목적을 가져야 한다.
+- 실제 문제 풀이 경험은 홈페이지와 분리된 전용 Exam 화면에서 제공한다.
+- 홈페이지는 제품 소개와 사용 흐름을 이해시키는 역할을 한다.
+- 구조는 desktop, tablet, mobile에서 자연스럽게 적응해야 한다.
+- 기능을 추가하더라도 기존의 핵심 학습 흐름이 복잡해지지 않아야 한다.
+
+Apple의 디자인 원칙을 웹앱 구조에 적용할 때 핵심은
+"많이 보여주는 것"이 아니라 "현재 사용자가 해야 할 일을 명확하게 보여주는 것"이다.
+
+
+==================================================
+1. PRODUCT ARCHITECTURE
+==================================================
+
+전체 핵심 흐름:
+
+Home
+  ↓
+PDF Upload
+  ↓
+Question Settings
+  ↓
+Question Generation
+  ↓
+Exam
+  ↓
+Results
+  ↓
+Review
+
+각 단계는 독립적인 목적을 가진 화면 또는 상태로 설계한다.
+
+핵심 학습 루프:
+
+PDF
+→ 문제 생성
+→ 문제 풀이
+→ 채점
+→ 틀린 문제/약점 확인
+→ 복습
+
+
+==================================================
+2. PAGE / ROUTE STRUCTURE
+==================================================
+
+권장 기본 라우트:
+
+/
+Home
+
+/upload
+PDF Upload
+
+/setup
+Question Settings
+
+/generate
+Question Generation / Processing
+
+/exam/:examId
+Actual Exam
+
+/results/:examId
+Exam Results
+
+/review/:examId
+Review
+
+향후 확장:
+
+/library
+Question / Exam Library
+
+/history
+Past Exam History
+
+/settings
+User Settings
+
+단, MVP에서는 필요한 기능만 노출한다.
+미래 기능을 위해 현재 화면에 불필요한 navigation이나 메뉴를 미리 추가하지 않는다.
+
+
+==================================================
+3. HOME
+==================================================
+
+홈페이지의 목적:
+
+"이 서비스가 무엇인지 이해시키고,
+사용자가 PDF를 업로드하여 시험을 시작하도록 만드는 것."
+
+홈페이지에서 실제 시험을 풀게 하지 않는다.
+
+권장 구조:
+
+HOME
+│
+├── Hero
+│   ├── Clear product message
+│   ├── Short explanation
+│   └── Primary CTA: PDF Upload / Start
+│
+├── PDF → Question
+│   └── 강의자료가 문제로 변환되는 과정
+│
+├── Question Examples
+│   ├── Multiple Choice
+│   ├── Short Answer
+│   └── Subjective
+│
+├── Exam Experience Preview
+│   └── 실제 Exam UI를 보여주는 demonstration
+│
+├── Results Preview
+│   └── 채점/결과 경험을 보여주는 demonstration
+│
+└── Final CTA
+    └── 시험 시작
+
+홈페이지의 각 section은 제품의 기능을 설명하지만
+사용자를 실제 학습 과정에서 계속 붙잡아두지 않는다.
+
+실제 학습 행동은 별도의 화면으로 이동한다.
+
+
+==================================================
+4. PDF UPLOAD
+==================================================
+
+목적:
+
+사용자가 학습 자료를 시스템에 제공하는 것.
+
+화면의 핵심 요소:
+
+- 업로드 영역
+- 파일 선택
+- drag & drop
+- 선택된 파일 정보
+- 파일 처리 상태
+- 오류 상태
+- 다음 단계 CTA
+
+사용자가 파일을 선택한 후에는
+"무엇을 해야 하는가"가 명확해야 한다.
+
+업로드 화면에 불필요한 설정을 한꺼번에 노출하지 않는다.
+
+상태:
+
+Idle
+→ File Selected
+→ Uploading
+→ Processing
+→ Completed
+→ Error
+
+
+==================================================
+5. QUESTION SETTINGS
+==================================================
+
+목적:
+
+시험 생성에 필요한 최소한의 조건을 설정하는 것.
+
+MVP 설정:
+
+- Question Type
+- Question Count
+- Difficulty
+
+Question Type:
+
+- Multiple Choice
+- Short Answer
+- Subjective
+
+설정 화면은 사용자가 선택해야 하는 항목을
+명확한 순서로 보여준다.
+
+권장 순서:
+
+1. 문제 유형
+2. 문제 수
+3. 난이도
+4. Generate Questions
+
+설정 항목을 과도하게 늘리지 않는다.
+
+
+==================================================
+6. QUESTION GENERATION
+==================================================
+
+목적:
+
+사용자가 기다리는 동안 현재 시스템 상태를 이해할 수 있도록 하는 것.
+
+기본 흐름:
+
+Preparing
+→ Extracting PDF Content
+→ Generating Questions
+→ Validating Questions
+→ Complete
+
+사용자에게 내부 구현 세부사항을 모두 보여주지는 않는다.
+
+핵심 메시지는:
+
+"현재 무엇을 하고 있는가?"
+"완료되면 무엇을 할 수 있는가?"
+
+두 가지를 명확하게 전달하는 것이다.
+
+생성 실패 시:
+
+- 무엇이 실패했는지
+- 사용자가 무엇을 할 수 있는지
+- 다시 시도할 수 있는지
+
+를 명확히 제공한다.
+
+
+==================================================
+7. EXAM
+==================================================
+
+Exam은 이 서비스의 핵심 화면이다.
+
+목적:
+
+"사용자가 생성된 문제를 실제 시험처럼 집중해서 푸는 것."
+
+Exam 화면에서는 학습과 직접 관계없는 UI를 최대한 제거한다.
+
+기본 구조:
+
+Exam
+│
+├── Minimal Header
+│   ├── Exam title / context
+│   └── Progress
+│
+├── Question Area
+│   ├── Question number
+│   ├── Question
+│   └── Answer area
+│
+└── Navigation
+    ├── Previous
+    └── Next / Submit
+
+가능하면 sidebar를 기본 구조로 사용하지 않는다.
+
+문제 풀이 중에는:
+
+- 광고
+- 불필요한 통계
+- 장식적인 AI 요소
+- 과도한 메뉴
+- 불필요한 카드
+
+등을 노출하지 않는다.
+
+사용자의 시선은
+Question → Answer → Next
+흐름을 따라가야 한다.
+
+
+==================================================
+8. QUESTION TYPE STRUCTURE
+==================================================
+
+Multiple Choice:
+
+Question
+→ 4 Choices
+→ Selection
+→ Next
+
+Short Answer:
+
+Question
+→ Text Input
+→ Next
+
+Subjective:
+
+Question
+→ Text Area
+→ Next
+
+문제 유형이 달라져도
+전체 Exam 인터페이스의 구조와 navigation은 최대한 동일하게 유지한다.
+
+사용자가 문제 유형이 바뀌었다고
+새로운 앱을 사용하는 느낌을 받지 않도록 한다.
+
+
+==================================================
+9. RESULTS
+==================================================
+
+목적:
+
+시험이 끝난 직후 결과를 이해하고
+다음 학습 행동을 선택하게 하는 것.
+
+권장 정보 계층:
+
+1. Overall Result
+2. Correct / Incorrect
+3. Question-level result
+4. Explanation
+5. Review CTA
+
+결과 화면은 단순히 점수만 보여주는 화면이 아니다.
+
+사용자가:
+
+"얼마나 맞았는가?"
+→ "무엇을 틀렸는가?"
+→ "왜 틀렸는가?"
+→ "다시 공부할 것은 무엇인가?"
+
+를 자연스럽게 따라갈 수 있어야 한다.
+
+
+==================================================
+10. REVIEW
+==================================================
+
+목적:
+
+시험 결과를 학습으로 연결하는 것.
+
+기본 구조:
+
+Review
+│
+├── Question
+├── User Answer
+├── Correct Answer / Model Answer
+├── Explanation
+└── Result
+
+Subjective 문제의 경우:
+
+- Score
+- Feedback
+- Model Answer
+
+를 제공한다.
+
+Review는 Exam과 달리
+사용자가 정답과 설명을 충분히 읽고 이해할 수 있도록 한다.
+
+
+==================================================
+11. NAVIGATION PRINCIPLES
+==================================================
+
+Navigation은 최소화한다.
+
+사용자에게 항상 필요한 navigation만 제공한다.
+
+핵심 원칙:
+
+- 현재 위치를 이해할 수 있어야 한다.
+- 다음 행동이 명확해야 한다.
+- 이전 단계로 돌아갈 방법이 있어야 한다.
+- 핵심 CTA가 다른 요소와 경쟁하지 않아야 한다.
+- 같은 기능은 항상 같은 위치와 의미를 유지한다.
+
+Exam에서는 navigation을 특히 최소화한다.
+
+홈페이지의 navigation과
+Exam의 navigation은 목적이 다르므로
+동일한 복잡도를 강요하지 않는다.
+
+
+==================================================
+12. CONTENT HIERARCHY
+==================================================
+
+모든 화면에서 정보는 중요도 순서로 배치한다.
+
+Hierarchy:
+
+1. Primary Content
+2. Primary Action
+3. Supporting Information
+4. Secondary Action
+5. Metadata
+
+예:
+
+Exam:
+
+Question
+↓
+Answer
+↓
+Next
+
+Results:
+
+Score
+↓
+Question Results
+↓
+Explanation
+↓
+Review
+
+
+==================================================
+13. SECTION STRUCTURE
+==================================================
+
+각 section은 하나의 메시지를 가져야 한다.
+
+좋은 구조:
+
+Heading
+Supporting sentence
+Main visual / content
+Optional CTA
+
+피해야 할 구조:
+
+Heading
+문장
+카드 6개
+버튼 4개
+배지 8개
+통계 10개
+
+하나의 section에 너무 많은 목적을 넣지 않는다.
+
+페이지를 스크롤하면서
+"이 section에서 무엇을 말하려는지"
+즉시 이해할 수 있어야 한다.
+
+
+==================================================
+14. RESPONSIVE STRUCTURE
+==================================================
+
+Responsive design은 단순히 desktop 화면을 축소하는 것이 아니다.
+
+Desktop / Tablet / Mobile은
+동일한 콘텐츠를 다른 공간 구조로 표현할 수 있어야 한다.
+
+Desktop:
+
+- 넓은 여백
+- 중앙 정렬된 content area
+- 필요할 경우 multi-column layout
+
+Tablet:
+
+- 여백 축소
+- column 구조 단순화
+- navigation 압축
+
+Mobile:
+
+- single-column
+- content 우선
+- navigation 단순화
+- 충분한 touch target
+- 자연스러운 text wrapping
+
+특히 Exam에서는 mobile에서도
+문제와 선택지가 깨지지 않아야 한다.
+
+절대 발생하면 안 되는 것:
+
+- horizontal overflow
+- question text clipping
+- option text clipping
+- button overflow
+- fixed-width content breaking
+- 지나치게 작은 글씨
+- 화면 밖으로 밀려나는 CTA
+
+
+==================================================
+15. CONTENT WIDTH
+==================================================
+
+페이지마다 적절한 읽기 폭을 사용한다.
+
+일반적인 페이지:
+
+약 1200px 이하의 content container
+
+읽기 중심:
+
+약 760px
+
+Exam:
+
+약 820px
+
+실제 CSS 값은 Visual Design System 문서에서 결정한다.
+
+핵심 원칙:
+
+"화면이 넓다고 콘텐츠까지 무한히 넓히지 않는다."
+
+
+==================================================
+16. UI LAYER VS CONTENT LAYER
+==================================================
+
+전체 제품을 두 개의 층으로 생각한다.
+
+UI Layer:
+- Navigation
+- Buttons
+- Controls
+- Progress
+- Menus
+- System feedback
+
+Content Layer:
+- Question
+- PDF content
+- Answers
+- Explanation
+- Results
+
+Content Layer가 주인공이다.
+
+UI는 콘텐츠를 방해하지 않고 지원해야 한다.
+
+특히 Exam에서는
+Content Layer가 화면의 중심을 차지해야 한다.
+
+
+==================================================
+17. STRUCTURAL SIMPLICITY
+==================================================
+
+단순함은 요소를 무조건 적게 만드는 것이 아니다.
+
+현재 사용자의 목적에 필요하지 않은 것을 제거하는 것이다.
+
+예:
+
+홈페이지:
+제품을 이해하는 데 필요한 정보는 보여준다.
+
+Exam:
+문제를 푸는 데 필요한 정보만 보여준다.
+
+Results:
+결과를 이해하고 복습하는 데 필요한 정보를 보여준다.
+
+각 화면은 자신의 목적에 충실해야 한다.
+
+
+==================================================
+18. DESIGN DECISION RULE
+==================================================
+
+새로운 UI 요소를 추가할 때 다음 질문을 통과해야 한다.
+
+1. 이 요소가 사용자의 현재 목표에 필요한가?
+2. 이 요소가 다음 행동을 더 명확하게 만드는가?
+3. 기존 UI와 같은 의미 체계를 사용하는가?
+4. mobile에서도 자연스럽게 작동하는가?
+5. 없어도 되는 요소라면 왜 존재해야 하는가?
+
+5개 중 필요성이 낮다면 추가하지 않는다.
+
+
+==================================================
+19. MVP BOUNDARY
+==================================================
+
+현재 MVP의 핵심:
+
+PDF Upload
+→ Question Settings
+→ Question Generation
+→ Exam
+→ Grading
+→ Results
+→ Review
+
+MVP에서는 다음 기능을 핵심 화면에 억지로 넣지 않는다.
+
+- 복잡한 dashboard
+- social features
+- leaderboard
+- unnecessary gamification
+- excessive statistics
+- complicated question management
+- AI chat
+- unnecessary personalization
+
+향후 기능이 필요해질 경우
+기존 핵심 학습 흐름을 방해하지 않는 별도 구조로 확장한다.
+
+
+==================================================
+20. FINAL STRUCTURE PRINCIPLE
+==================================================
+
+이 제품의 구조는 다음 한 문장으로 요약한다.
+
+"강의자료를 넣으면 시험이 만들어지고,
+시험을 보면 결과가 나오며,
+결과가 다시 복습으로 이어진다."
+
+모든 화면과 기능은 이 학습 루프를 강화해야 한다.
+
+Apple-inspired structure의 목표는
+Apple의 화면을 복제하는 것이 아니라
+명확한 목적, 익숙한 구조, 강한 콘텐츠 우선순위,
+불필요한 복잡성의 제거, 그리고 다양한 화면 크기에 대한
+자연스러운 적응을 제품 전체의 구조에 적용하는 것이다.

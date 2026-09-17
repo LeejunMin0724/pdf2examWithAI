@@ -1,0 +1,868 @@
+APPLE-INSPIRED DESIGN GUIDELINES
+04. IMPLEMENTATION RULES
+
+Project: PDF-based University Exam Study Web App
+
+==================================================
+0. PURPOSE
+==================================================
+
+이 문서는 01~03 디자인 지침을
+실제 코드에 적용할 때 개발자가 지켜야 할 규칙을 정의한다.
+
+목표:
+
+- 디자인 일관성 유지
+- 재사용 가능한 component 구조
+- responsive behavior 보장
+- 접근성 보장
+- 기존 기능을 깨뜨리지 않는 UI 개선
+- CSS 중복과 임의의 styling 방지
+- 화면별 임시 해결책의 남발 방지
+
+이 문서는 "예쁘게 만들어라"가 아니라
+"정해진 디자인 시스템을 코드에서 어떻게 유지할 것인가"를 정의한다.
+
+
+==================================================
+1. DESIGN GUIDELINES ARE HIERARCHICAL
+==================================================
+
+구현 우선순위:
+
+01. Product Structure
+02. User Experience
+03. Visual Design System
+04. Implementation Rules
+
+구현 과정에서 서로 충돌할 경우
+상위 목적을 우선한다.
+
+예:
+
+예쁜 card를 추가할 수 있어도
+Exam의 집중도를 떨어뜨린다면 추가하지 않는다.
+
+animation을 추가할 수 있어도
+사용자의 행동을 느리게 만든다면 추가하지 않는다.
+
+
+==================================================
+2. INSPECT BEFORE MODIFYING
+==================================================
+
+기존 repository를 먼저 분석한다.
+
+변경 전에 확인:
+
+- framework
+- routing
+- component structure
+- CSS architecture
+- existing design tokens
+- existing pages
+- existing API integration
+- existing state management
+- existing data model
+
+이미 존재하는 기능을
+새로운 구조로 무작정 재작성하지 않는다.
+
+가능하면 기존 구조를 재사용하면서
+필요한 부분만 개선한다.
+
+
+==================================================
+3. PRESERVE FUNCTIONALITY
+==================================================
+
+디자인 변경의 가장 중요한 규칙:
+
+"기능을 깨뜨리지 않는다."
+
+특히 다음을 보존한다.
+
+- PDF upload
+- PDF processing
+- question generation
+- question type selection
+- question count
+- difficulty
+- exam flow
+- answer persistence
+- grading
+- results
+- subjective grading
+- API error handling
+
+UI refactor 때문에
+기존 기능이 사라지거나 우회되어서는 안 된다.
+
+
+==================================================
+4. COMPONENT REUSE
+==================================================
+
+반복되는 UI는 component로 추출한다.
+
+예:
+
+Button
+Input
+Select
+QuestionOption
+Progress
+Modal
+Toast
+Header
+Section
+Card
+ExamNavigation
+QuestionRenderer
+
+같은 시각적 역할을 하는 component를
+페이지마다 새로 만들지 않는다.
+
+
+==================================================
+5. AVOID PAGE-SPECIFIC STYLES
+==================================================
+
+같은 역할의 button인데
+페이지마다 다른 CSS를 만들지 않는다.
+
+나쁜 예:
+
+.home-button
+.exam-button
+.result-button
+.special-blue-button
+
+좋은 방향:
+
+<Button variant="primary">
+<Button variant="secondary">
+<Button variant="ghost">
+
+필요한 variation만 component API로 제공한다.
+
+
+==================================================
+6. USE DESIGN TOKENS
+==================================================
+
+반복되는 값은 CSS variables로 관리한다.
+
+예:
+
+color:
+var(--text-primary)
+
+spacing:
+var(--space-4)
+
+radius:
+var(--radius-md)
+
+accent:
+var(--accent)
+
+직접 값을 반복하지 않는다.
+
+나쁜 예:
+
+color: #1D1D1F;
+color: #1D1D1F;
+color: #1D1D1F;
+
+좋은 예:
+
+color: var(--text-primary);
+
+
+==================================================
+7. AVOID MAGIC NUMBERS
+==================================================
+
+레이아웃에서 의미 없는 숫자를
+무작정 추가하지 않는다.
+
+예:
+
+margin-left: 37px;
+top: 113px;
+width: 743px;
+
+같은 값이 반복되거나
+의미 있는 spacing이라면
+design token 또는 layout rule로 만든다.
+
+단, content-specific positioning처럼
+실제로 필요한 값은 예외적으로 사용할 수 있다.
+
+
+==================================================
+8. LAYOUT SYSTEM
+==================================================
+
+기본 layout은:
+
+- max-width
+- margin auto
+- padding
+- gap
+- flex
+- grid
+
+등으로 구성한다.
+
+가능하면 absolute positioning으로
+전체 페이지 layout을 만들지 않는다.
+
+특히 responsive 페이지에서
+absolute positioning을 남용하지 않는다.
+
+
+==================================================
+9. RESPONSIVE FIRST
+==================================================
+
+모든 component는
+desktop에서만 정상 작동해서는 안 된다.
+
+최소한 다음을 확인한다.
+
+Mobile
+Tablet
+Desktop
+
+특히:
+
+- Korean text
+- English technical terms
+- numbers
+- long questions
+- long answer choices
+- long subjective answers
+
+가 자연스럽게 wrapping되는지 확인한다.
+
+
+==================================================
+10. NO HORIZONTAL OVERFLOW
+==================================================
+
+일반적인 화면에서는
+가로 스크롤이 발생하지 않아야 한다.
+
+특히 다음 요소:
+
+- question
+- answer option
+- button group
+- navigation
+- input
+- result content
+
+가 viewport 밖으로 나가면 안 된다.
+
+overflow-x를 무작정 hidden으로 처리해서
+실제 문제를 숨기는 방식으로 해결하지 않는다.
+
+근본적인 width / wrapping / layout 문제를 해결한다.
+
+
+==================================================
+11. TEXT WRAPPING
+==================================================
+
+문제 텍스트는
+절대 clipping하지 않는다.
+
+사용:
+
+- normal wrapping
+- overflow-wrap
+- word-break를 필요한 경우에만 적절히 사용
+- flexible width
+- max-width
+
+한국어와 영어가 섞인 문장에서
+긴 영어 technical term 때문에
+layout이 깨지지 않도록 한다.
+
+
+==================================================
+12. IMAGE / MEDIA RESPONSIVENESS
+==================================================
+
+image와 media는
+container 밖으로 나가지 않도록 한다.
+
+필요한 경우:
+
+max-width: 100%;
+height: auto;
+
+를 사용한다.
+
+이미지가 content보다 우선되어
+텍스트를 밀어내지 않도록 한다.
+
+
+==================================================
+13. BUTTON IMPLEMENTATION
+==================================================
+
+모든 button은
+실제 <button> semantics를 우선한다.
+
+clickable div를
+button처럼 사용하지 않는다.
+
+Button component는 최소한:
+
+- variant
+- size
+- disabled
+- loading
+- type
+
+등을 일관되게 지원할 수 있어야 한다.
+
+
+==================================================
+14. INPUT IMPLEMENTATION
+==================================================
+
+input / textarea는
+label과 semantic relationship을 유지한다.
+
+placeholder를 label의 대체물로 사용하지 않는다.
+
+validation error가 있다면:
+
+- input state
+- error message
+- accessible relationship
+
+을 함께 처리한다.
+
+
+==================================================
+15. FOCUS STATE
+==================================================
+
+keyboard navigation을 고려하여
+focus state를 제거하지 않는다.
+
+다음과 같은 코드는 피한다.
+
+outline: none;
+
+대체 focus indicator를
+반드시 제공한다.
+
+
+==================================================
+16. ACCESSIBILITY
+==================================================
+
+기본 semantic HTML을 우선한다.
+
+가능하면:
+
+<header>
+<nav>
+<main>
+<section>
+<button>
+<label>
+<input>
+<textarea>
+
+등을 사용한다.
+
+ARIA는 semantic HTML로 해결할 수 없는 경우에
+보완적으로 사용한다.
+
+
+==================================================
+17. COLOR IMPLEMENTATION
+==================================================
+
+색상은 semantic token을 통해 사용한다.
+
+예:
+
+--text-primary
+--text-secondary
+--background
+--surface
+--border
+--accent
+--success
+--error
+
+component 안에서
+임의의 새로운 색상을 추가하지 않는다.
+
+새로운 색상이 정말 필요한 경우
+design token으로 승격할 필요가 있는지 검토한다.
+
+
+==================================================
+18. TYPOGRAPHY IMPLEMENTATION
+==================================================
+
+font-size, weight, line-height를
+component마다 임의로 정하지 않는다.
+
+가능하면 typography role을 사용한다.
+
+예:
+
+display
+heading-1
+heading-2
+body
+body-small
+caption
+label
+exam-question
+exam-option
+
+특히 Exam question은
+일반 body와 별도의 typography role로 유지한다.
+
+
+==================================================
+19. Z-INDEX
+==================================================
+
+z-index를 무작정 높은 숫자로 만들지 않는다.
+
+레이어 구조를 정의한다.
+
+예:
+
+base
+dropdown
+sticky controls
+modal
+toast
+
+필요한 경우 token으로 관리한다.
+
+z-index: 999999;
+같은 방식의 남발을 피한다.
+
+
+==================================================
+20. FIXED / STICKY UI
+==================================================
+
+fixed 또는 sticky UI는
+사용자의 content를 가리지 않는지 확인한다.
+
+특히 mobile:
+
+- browser viewport
+- virtual keyboard
+- safe area
+- bottom navigation
+
+등을 고려한다.
+
+Exam navigation이 화면 하단을 가릴 경우
+충분한 content padding을 확보한다.
+
+
+==================================================
+21. ANIMATION IMPLEMENTATION
+==================================================
+
+animation은 목적이 있어야 한다.
+
+허용:
+
+- state transition
+- modal transition
+- page transition
+- progress
+- feedback
+
+피함:
+
+- decorative looping animation
+- excessive bounce
+- long delay
+- attention-grabbing motion
+
+사용자가 animation이 끝날 때까지
+기다려야 하는 UX를 만들지 않는다.
+
+
+==================================================
+22. REDUCED MOTION
+==================================================
+
+prefers-reduced-motion을 지원한다.
+
+사용자가 motion reduction을 설정한 경우
+장식적인 transition / animation을 최소화한다.
+
+기능과 정보는 동일하게 유지한다.
+
+
+==================================================
+23. LOADING IMPLEMENTATION
+==================================================
+
+비동기 작업은
+명확한 state machine을 사용한다.
+
+예:
+
+idle
+uploading
+processing
+generating
+success
+error
+
+loading 상태에서
+중복 요청이 발생하지 않도록 한다.
+
+버튼을 적절히 disabled 처리한다.
+
+
+==================================================
+24. API ERROR BOUNDARY
+==================================================
+
+외부 API 호출은
+항상 실패할 수 있다고 가정한다.
+
+LLM 관련 오류:
+
+- timeout
+- rate limit
+- provider error
+- invalid response
+- invalid JSON
+- network error
+
+등을 처리한다.
+
+사용자 UI에는
+필요한 수준의 친절한 메시지를 표시한다.
+
+개발자용 상세 error는
+로그에 남긴다.
+
+
+==================================================
+25. SUBJECTIVE GRADING IMPLEMENTATION
+==================================================
+
+서술형 답변 처리 순서:
+
+1. User submits answer
+2. Save answer
+3. Request LLM grading
+4. Validate response
+5. Save grade
+6. Display result
+
+LLM grading 실패 때문에
+사용자 답변이 사라지면 안 된다.
+
+LLM response는
+schema validation을 거친다.
+
+예상 구조:
+
+{
+  "score": 4,
+  "max_score": 5,
+  "feedback": "..."
+}
+
+
+==================================================
+26. SECURITY
+==================================================
+
+API key는 frontend에 노출하지 않는다.
+
+환경변수 또는
+server-side configuration을 사용한다.
+
+절대:
+
+- source code에 hardcode
+- frontend bundle에 포함
+- client-side local storage에 secret 저장
+- UI에 API key 출력
+
+하지 않는다.
+
+
+==================================================
+27. DATA VALIDATION
+==================================================
+
+LLM이나 외부 시스템에서 받은 데이터는
+항상 validation한다.
+
+특히 question generation:
+
+- question 존재
+- options 개수
+- correct answer 존재
+- explanation 존재
+- question type 유효성
+
+등을 확인한다.
+
+Subjective:
+
+- score 범위
+- max_score
+- feedback
+
+을 확인한다.
+
+
+==================================================
+28. ERROR RECOVERY
+==================================================
+
+가능한 오류는
+전체 workflow를 초기화하지 않고
+실패한 단계에서 복구할 수 있도록 한다.
+
+예:
+
+Question generation 실패
+→ Retry generation
+
+Subjective grading 실패
+→ Retry grading
+
+Upload 성공 후 generation 실패
+→ PDF를 다시 업로드하지 않아도 되도록 한다.
+
+
+==================================================
+29. ROUTE SEPARATION
+==================================================
+
+실제 Exam은
+Home 내부 component로 계속 유지하지 않는다.
+
+전용 route를 사용한다.
+
+예:
+
+/exam/:examId
+
+Home의 Exam UI는
+demonstration / preview 용도다.
+
+실제 answer state와 grading state는
+실제 Exam route에서 관리한다.
+
+
+==================================================
+30. HOME / EXAM SEPARATION
+==================================================
+
+Homepage:
+
+- product introduction
+- examples
+- demonstrations
+- CTA
+
+Exam:
+
+- question
+- answer
+- progress
+- navigation
+
+두 화면의 목적을 섞지 않는다.
+
+
+==================================================
+31. DESIGN QA
+==================================================
+
+디자인 변경 후 다음을 확인한다.
+
+Desktop:
+- layout
+- spacing
+- typography
+- alignment
+
+Tablet:
+- layout collapse
+- content width
+- navigation
+
+Mobile:
+- text wrapping
+- button width
+- input usability
+- overflow
+- sticky/fixed UI
+
+Exam:
+- long question
+- long option
+- long answer
+- unanswered question
+- last question
+- submit
+- grading failure
+
+
+==================================================
+32. EDGE CASE QA
+==================================================
+
+최소 테스트:
+
+1. 매우 긴 PDF
+2. 1페이지 PDF
+3. 긴 파일명
+4. 긴 문제
+5. 긴 선택지
+6. 긴 주관식 답변
+7. 빈 답변
+8. API timeout
+9. API rate limit
+10. malformed LLM response
+11. mobile width
+12. tablet width
+13. large desktop width
+
+
+==================================================
+33. DO NOT OVER-DESIGN
+==================================================
+
+다음 요소는 필요성이 확인된 경우에만 추가한다.
+
+- gradient
+- glass effect
+- decorative illustration
+- excessive cards
+- excessive badges
+- large shadows
+- complex animation
+- excessive icons
+- excessive color
+
+"추가할 수 있는가?"가 아니라
+"정말 필요한가?"를 기준으로 결정한다.
+
+
+==================================================
+34. DO NOT REINVENT STANDARD UI
+==================================================
+
+사용자가 이미 익숙한 UI pattern을
+불필요하게 새롭게 만들지 않는다.
+
+예:
+
+Button
+Input
+Checkbox
+Radio
+Select
+Modal
+Navigation
+Progress
+
+등은 익숙한 interaction을 유지한다.
+
+브랜드 개성은
+기본 interaction을 망가뜨리는 방식이 아니라
+Typography, spacing, content presentation,
+subtle visual details에서 표현한다.
+
+
+==================================================
+35. CODE QUALITY
+==================================================
+
+디자인 작업을 이유로
+불필요한 dependency를 추가하지 않는다.
+
+기존 프로젝트 stack을 우선 활용한다.
+
+중복 CSS를 줄인다.
+
+component의 책임을 명확하게 유지한다.
+
+작은 수정으로 해결할 수 있는 문제를
+전체 architecture rewrite로 해결하지 않는다.
+
+
+==================================================
+36. FINAL IMPLEMENTATION CHECKLIST
+==================================================
+
+작업 완료 전 확인:
+
+[ ] Existing functionality preserved
+[ ] Design tokens used
+[ ] No unnecessary hardcoded styles
+[ ] Components reused
+[ ] Responsive layout works
+[ ] No horizontal overflow
+[ ] Long Korean text wraps correctly
+[ ] Long English terms do not break layout
+[ ] Keyboard navigation works
+[ ] Focus state visible
+[ ] Color is not the only state indicator
+[ ] Loading states are clear
+[ ] Error states are recoverable
+[ ] API keys remain server-side
+[ ] Exam is separated from Home
+[ ] Mobile UI is usable
+[ ] Reduced motion considered
+[ ] Edge cases tested
+
+
+==================================================
+37. FINAL IMPLEMENTATION PRINCIPLE
+==================================================
+
+코드로 구현했을 때도
+디자인 시스템의 원칙이 유지되어야 한다.
+
+목표는:
+
+"각 페이지를 예쁘게 만드는 것"
+
+이 아니다.
+
+목표는:
+
+"하나의 일관된 제품처럼 보이고,
+어떤 화면 크기에서도 자연스럽게 작동하며,
+사용자가 공부에 집중할 수 있는 인터페이스를
+재사용 가능한 코드 구조로 만드는 것"
+
+이다.
+
+Apple-inspired implementation은
+Apple의 UI를 복사하는 것이 아니라
+목적, 명확성, 일관성, 적응성, 접근성,
+그리고 세부적인 완성도를 코드 수준에서 유지하는 것이다.

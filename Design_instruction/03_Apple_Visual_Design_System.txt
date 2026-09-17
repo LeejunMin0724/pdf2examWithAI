@@ -1,0 +1,974 @@
+APPLE-INSPIRED DESIGN GUIDELINES
+03. VISUAL DESIGN SYSTEM
+
+Project: PDF-based University Exam Study Web App
+
+==================================================
+0. PURPOSE
+==================================================
+
+이 문서는 앱의 시각적 디자인을 실제 CSS로 구현할 수 있는 수준까지 정의한다.
+
+01. PRODUCT STRUCTURE는 무엇을 어디에 배치할지,
+02. USER EXPERIENCE는 사용자가 어떻게 경험할지를 정의했다.
+
+03. VISUAL DESIGN SYSTEM은
+폰트, 색상, 크기, 간격, radius, border, shadow,
+component appearance, responsive typography 등을 정의한다.
+
+핵심 방향:
+
+Apple-inspired
++ modern education SaaS
++ content-first
++ quiet / precise / readable
+
+Apple의 시각적 언어를 그대로 복제하지 않는다.
+Apple HIG의 원칙을 웹앱에 맞게 번역한다.
+
+핵심 원칙:
+
+- Content first
+- Typography-led hierarchy
+- Restrained color
+- Generous whitespace
+- Familiar controls
+- Minimal decoration
+- Flat content areas
+- Materials only where useful
+- Responsive by default
+- Accessibility by default
+
+
+==================================================
+1. FONT FAMILY
+==================================================
+
+기본 폰트:
+
+"Pretendard Variable",
+Pretendard,
+-apple-system,
+BlinkMacSystemFont,
+"Apple SD Gothic Neo",
+"Noto Sans KR",
+sans-serif
+
+CSS:
+
+font-family:
+  "Pretendard Variable",
+  Pretendard,
+  -apple-system,
+  BlinkMacSystemFont,
+  "Apple SD Gothic Neo",
+  "Noto Sans KR",
+  sans-serif;
+
+한국어, 영어, 숫자, 기호가 섞이는 학습 콘텐츠를 고려한다.
+
+가능하면 Variable Font를 사용한다.
+
+
+==================================================
+2. FONT WEIGHT
+==================================================
+
+사용할 weight는 4단계로 제한한다.
+
+Regular:
+400
+
+Medium:
+500
+
+Semibold:
+600
+
+Bold:
+700
+
+기본 본문:
+400
+
+Button:
+500
+
+Subheading:
+600
+
+Heading:
+600
+
+강한 강조:
+700
+
+본문 전체를 500 이상으로 처리하지 않는다.
+
+
+==================================================
+3. TYPOGRAPHY SCALE
+==================================================
+
+기본 CSS variables:
+
+--text-xs: 12px;
+--text-sm: 14px;
+--text-md: 16px;
+--text-lg: 18px;
+--text-xl: 20px;
+--text-2xl: 24px;
+--text-3xl: 30px;
+--text-4xl: 36px;
+--text-5xl: 48px;
+--text-6xl: 64px;
+
+기본 body:
+
+font-size: 16px;
+font-weight: 400;
+line-height: 1.6;
+
+
+==================================================
+4. TYPOGRAPHY ROLES
+==================================================
+
+Display / Hero:
+
+Desktop:
+56px
+600
+line-height: 1.08
+letter-spacing: -0.04em
+
+Mobile:
+40px
+600
+line-height: 1.12
+letter-spacing: -0.03em
+
+H1:
+
+Desktop:
+48px
+600
+line-height: 1.1
+letter-spacing: -0.035em
+
+Mobile:
+36px
+600
+line-height: 1.12
+
+H2:
+
+36px
+600
+line-height: 1.15
+letter-spacing: -0.025em
+
+Mobile:
+30px
+
+H3:
+
+24px
+600
+line-height: 1.25
+
+Body Large:
+
+18px
+400
+line-height: 1.6
+
+Body:
+
+16px
+400
+line-height: 1.6
+
+Body Small:
+
+14px
+400
+line-height: 1.5
+
+Caption:
+
+12px
+400
+line-height: 1.45
+
+Label:
+
+14px
+500
+line-height: 1.4
+
+
+==================================================
+5. EXAM TYPOGRAPHY
+==================================================
+
+Exam은 읽기 중심이므로 일반 UI보다 문제를 우선한다.
+
+Question Number:
+
+14px
+500
+
+Question:
+
+Desktop:
+22px
+500
+line-height: 1.65
+letter-spacing: -0.015em
+
+Mobile:
+19px
+500
+line-height: 1.65
+
+권장 CSS:
+
+.exam-question {
+  font-size: clamp(19px, 1.4vw, 22px);
+  font-weight: 500;
+  line-height: 1.65;
+  letter-spacing: -0.015em;
+}
+
+Question은 절대 clipping하지 않는다.
+
+긴 문제는 자연스럽게 여러 줄로 wrapping한다.
+
+
+==================================================
+6. ANSWER TYPOGRAPHY
+==================================================
+
+Multiple Choice:
+
+16px
+400
+line-height: 1.55
+
+Short Answer:
+
+16px
+400
+line-height: 1.55
+
+Subjective:
+
+16px
+400
+line-height: 1.6
+
+Answer text가 길어져도
+container 밖으로 overflow하지 않는다.
+
+
+==================================================
+7. TEXT COLOR
+==================================================
+
+Primary:
+
+#1D1D1F
+
+Secondary:
+
+#6E6E73
+
+Tertiary:
+
+#86868B
+
+Disabled:
+
+#AEAEB2
+
+Primary는 제목, 문제, 핵심 내용에 사용한다.
+
+Secondary는 설명과 보조 정보에 사용한다.
+
+Tertiary는 metadata, caption, placeholder 등에 사용한다.
+
+텍스트 계층을 만들기 위해
+무작정 여러 색을 추가하지 않는다.
+
+
+==================================================
+8. BACKGROUND
+==================================================
+
+Primary background:
+
+#FFFFFF
+
+Secondary background:
+
+#F7F7F8
+
+Tertiary subtle background:
+
+#FAFAFA
+
+기본 화면은 white를 사용한다.
+
+section을 구분할 필요가 있을 때만
+secondary background를 사용한다.
+
+
+==================================================
+9. ACCENT COLOR
+==================================================
+
+Primary accent:
+
+#007AFF
+
+Accent hover:
+
+#006FE6
+
+Accent soft:
+
+#EAF3FF
+
+사용처:
+
+- Primary CTA
+- Selected state
+- Links
+- Progress
+- Important interactive elements
+
+accent color를 페이지 전체에 넓게 칠하지 않는다.
+
+
+==================================================
+10. SEMANTIC COLORS
+==================================================
+
+Success:
+
+#34C759
+
+Success soft:
+
+#EAF8EE
+
+Error:
+
+#FF3B30
+
+Error soft:
+
+#FFF0EF
+
+Warning:
+
+#FF9500
+
+Warning soft:
+
+#FFF5E8
+
+상태를 색상 하나로만 전달하지 않는다.
+
+예:
+
+✓ Correct
+
+× Incorrect
+
+같은 icon / text indication을 함께 사용한다.
+
+
+==================================================
+11. BORDER
+==================================================
+
+Default border:
+
+#E5E5EA
+
+Subtle border:
+
+#F0F0F2
+
+Divider:
+
+#E5E5EA
+
+Border는 구조를 설명하기 위해 사용한다.
+
+모든 요소에 border를 넣지 않는다.
+
+
+==================================================
+12. RADIUS
+==================================================
+
+--radius-sm: 8px;
+--radius-md: 12px;
+--radius-lg: 16px;
+--radius-xl: 20px;
+--radius-pill: 999px;
+
+권장:
+
+Input:
+10~12px
+
+Button:
+10~12px
+
+Option:
+14px
+
+Card:
+16px
+
+Modal:
+20px
+
+Badge:
+999px
+
+과도하게 둥근 UI를 피한다.
+
+
+==================================================
+13. SHADOW
+==================================================
+
+Shadow는 최소한으로 사용한다.
+
+--shadow-sm:
+0 1px 2px rgba(0, 0, 0, 0.04);
+
+--shadow-md:
+0 4px 16px rgba(0, 0, 0, 0.06);
+
+Content 영역에는 기본적으로 shadow를 사용하지 않는다.
+
+Shadow는 elevation이나 floating element를 표현할 때만 사용한다.
+
+
+==================================================
+14. SPACING SYSTEM
+==================================================
+
+8px 기반 spacing system:
+
+--space-1: 4px;
+--space-2: 8px;
+--space-3: 12px;
+--space-4: 16px;
+--space-5: 20px;
+--space-6: 24px;
+--space-8: 32px;
+--space-10: 40px;
+--space-12: 48px;
+--space-16: 64px;
+--space-20: 80px;
+--space-24: 96px;
+
+반복되는 spacing은
+가능하면 이 scale을 사용한다.
+
+
+==================================================
+15. PAGE SPACING
+==================================================
+
+Desktop:
+
+section-to-section:
+96~128px
+
+heading-to-description:
+16~24px
+
+description-to-CTA:
+24~32px
+
+card internal padding:
+24px
+
+Mobile:
+
+section-to-section:
+64~80px
+
+card padding:
+20px
+
+페이지가 넓은 whitespace를 가지되
+콘텐츠가 지나치게 멀리 떨어지지 않도록 한다.
+
+
+==================================================
+16. CONTENT WIDTH
+==================================================
+
+General:
+
+max-width: 1200px
+
+Reading:
+
+max-width: 760px
+
+Exam:
+
+max-width: 820px
+
+Hero text:
+
+max-width: 600px
+
+넓은 화면에서도
+문장이 지나치게 길어지지 않게 한다.
+
+
+==================================================
+17. GRID / LAYOUT
+==================================================
+
+기본 페이지 container:
+
+width:
+min(100% - 48px, 1200px)
+
+mobile:
+
+width:
+calc(100% - 32px)
+
+Desktop에서는 충분한 whitespace를 제공한다.
+
+Mobile에서는 좌우 16px 정도의
+안전한 page padding을 유지한다.
+
+
+==================================================
+18. BUTTON
+==================================================
+
+Primary button:
+
+height: 48px
+padding: 0 20px
+font-size: 15px
+font-weight: 500
+border-radius: 12px
+
+Small button:
+
+height: 40px
+padding: 0 16px
+font-size: 14px
+border-radius: 10px
+
+Primary button은 한 화면에서
+가장 중요한 행동을 나타낸다.
+
+한 화면에 primary CTA를 지나치게 많이 만들지 않는다.
+
+
+==================================================
+19. BUTTON STATES
+==================================================
+
+각 button은 최소한 다음 상태를 지원한다.
+
+Default
+Hover
+Focus
+Active
+Disabled
+Loading
+
+Hover:
+
+background-color 또는 opacity의
+미세한 변화.
+
+Active:
+
+눌린 느낌을 짧게 제공한다.
+
+Focus:
+
+keyboard 사용자가 명확하게 확인할 수 있는
+visible focus ring을 제공한다.
+
+Loading:
+
+버튼의 의미를 유지하면서
+중복 클릭을 방지한다.
+
+
+==================================================
+20. INPUT
+==================================================
+
+기본 input:
+
+height:
+48px
+
+padding:
+0 16px
+
+font-size:
+16px
+
+border:
+1px solid #E5E5EA
+
+border-radius:
+12px
+
+Focus:
+
+accent color 기반의 명확한 focus indication.
+
+Placeholder:
+
+#86868B
+
+Placeholder가 실제 입력값처럼 보이지 않도록 한다.
+
+
+==================================================
+21. ANSWER OPTION
+==================================================
+
+Multiple choice option:
+
+min-height:
+56px
+
+padding:
+16px 20px
+
+border:
+1px solid #E5E5EA
+
+border-radius:
+14px
+
+background:
+#FFFFFF
+
+Default:
+
+neutral
+
+Hover:
+
+subtle background / border change
+
+Selected:
+
+accent border + subtle accent background
+
+Correct:
+
+success indication
+
+Incorrect:
+
+error indication
+
+선택 상태는
+색상 + border + icon/text 등의
+여러 신호를 적절히 조합한다.
+
+
+==================================================
+22. CARD
+==================================================
+
+Card는 필요한 경우에만 사용한다.
+
+기본:
+
+background:
+#FFFFFF
+
+border:
+1px solid #E5E5EA
+
+border-radius:
+16px
+
+padding:
+24px
+
+shadow:
+none
+
+Card를 모든 section에 사용하지 않는다.
+
+특히 Exam의 Question Area는
+기본적으로 card 없이 flat하게 구성한다.
+
+
+==================================================
+23. EXAM CONTENT
+==================================================
+
+Exam:
+
+background:
+#FFFFFF
+
+Question area:
+flat
+
+Question container:
+max-width 820px
+
+Question text:
+19~22px
+
+Options:
+16px
+
+Navigation:
+clear and minimal
+
+Exam의 UI는
+사용자가 "시험을 보는 것"에 집중하도록 한다.
+
+
+==================================================
+24. HOME VISUAL STRUCTURE
+==================================================
+
+Hero:
+
+큰 typography
+넓은 whitespace
+짧은 description
+명확한 CTA
+
+Section:
+
+Heading
+Description
+Visual / Demonstration
+
+Homepage에서 실제 Exam을 직접 수행하지 않는다.
+
+Exam UI를 보여주는 demonstration은
+제품의 사용 경험을 이해시키는 시각적 preview로 사용한다.
+
+
+==================================================
+25. ICONS
+==================================================
+
+Icon은 의미 전달을 위해 사용한다.
+
+장식적인 icon을 과도하게 추가하지 않는다.
+
+가능하면 하나의 icon style을 일관되게 사용한다.
+
+Icon만으로 중요한 의미를 전달하지 않는다.
+필요하면 text label을 함께 제공한다.
+
+
+==================================================
+26. MATERIAL / GLASS
+==================================================
+
+Glassmorphism을 기본 디자인으로 사용하지 않는다.
+
+Liquid Glass 또는 translucent material은
+navigation / floating controls 등
+UI layer에 제한적으로 사용할 수 있다.
+
+Content layer:
+
+Question
+Answer
+Explanation
+Results
+
+에는 기본적으로 사용하지 않는다.
+
+핵심 원칙:
+
+UI floats.
+Content stays clear.
+
+
+==================================================
+27. RESPONSIVE TYPOGRAPHY
+==================================================
+
+큰 제목은 clamp()를 활용해
+화면 폭에 따라 자연스럽게 변할 수 있다.
+
+예:
+
+font-size:
+clamp(40px, 5vw, 60px);
+
+Exam question:
+
+font-size:
+clamp(19px, 1.4vw, 22px);
+
+단, 작은 화면에서
+읽기 어려울 정도로 글자를 축소하지 않는다.
+
+
+==================================================
+28. RESPONSIVE BREAKPOINTS
+==================================================
+
+권장 기준:
+
+Mobile:
+< 640px
+
+Tablet:
+640px ~ 1023px
+
+Desktop:
+>= 1024px
+
+필요하면 실제 content width에 따라
+추가 breakpoint를 사용할 수 있다.
+
+breakpoint 자체를 목표로 삼지 않는다.
+레이아웃이 깨지는 지점에서 적절히 변경한다.
+
+
+==================================================
+29. MOBILE RULES
+==================================================
+
+Mobile:
+
+- single column 우선
+- horizontal overflow 금지
+- text clipping 금지
+- button overflow 금지
+- 충분한 touch target
+- page padding 약 16px
+- Exam content width 100%
+- 긴 한국어/영문 혼합 문장 자연스럽게 wrapping
+
+고정 pixel width를 남발하지 않는다.
+
+
+==================================================
+30. DARK MODE
+==================================================
+
+Dark mode를 구현할 경우
+색상 값을 단순 반전하지 않는다.
+
+Dark background와 text hierarchy를
+별도의 semantic token으로 관리한다.
+
+예:
+
+--background-dark
+--surface-dark
+--text-primary-dark
+--text-secondary-dark
+--border-dark
+
+다크모드에서도
+accent / success / error의 contrast를 확인한다.
+
+
+==================================================
+31. ACCESSIBILITY VISUAL RULES
+==================================================
+
+필수:
+
+- 충분한 contrast
+- visible focus state
+- color-only indication 금지
+- 충분한 text size
+- text scaling 대응
+- touch target 확보
+- reduced motion 대응
+
+텍스트가 작아지는 대신
+레이아웃이 더 길어지는 것을 허용한다.
+
+
+==================================================
+32. CSS TOKEN PRINCIPLE
+==================================================
+
+반복되는 디자인 값은
+CSS variable로 관리한다.
+
+예:
+
+var(--text-primary)
+var(--accent)
+var(--radius-md)
+var(--space-4)
+
+같은 값을 여러 component에
+직접 hardcode하지 않는다.
+
+디자인 변경이 필요할 때
+하나의 token을 수정하여
+전체 UI가 일관되게 변경되도록 한다.
+
+
+==================================================
+33. VISUAL PRIORITY
+==================================================
+
+시각적 강조 순서:
+
+1. Main Content
+2. Primary Action
+3. Supporting Content
+4. Secondary Action
+5. Metadata
+
+UI decoration은
+이 hierarchy보다 중요해지면 안 된다.
+
+
+==================================================
+34. FINAL VISUAL PRINCIPLE
+==================================================
+
+이 디자인 시스템의 목표는
+"애플처럼 보이는 것"이 아니다.
+
+사용자가 화면을 봤을 때:
+
+무엇이 중요한지
+→ 무엇을 읽어야 하는지
+→ 무엇을 눌러야 하는지
+
+가 자연스럽게 이해되도록 만드는 것이다.
+
+Apple-inspired visual design의 핵심은
+색상이나 glass 효과가 아니라
+타이포그래피, 여백, 계층, 정렬,
+절제된 색상, 익숙한 component,
+그리고 세부적인 상태 처리의 일관성이다.
