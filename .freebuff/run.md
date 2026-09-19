@@ -2,6 +2,8 @@
 
 ## Reproduce uncommitted artifacts (fresh checkout)
 
+> **DB 전환 (2026-09-19)**: Prisma는 이제 **Supabase PostgreSQL**을 사용 (provider postgresql). `.env.local`의 `DATABASE_URL`은 트랜잭션 풀러(포트 6543, `?pgbouncer=true`), `DIRECT_URL`은 세션 풀러(포트 5432) — db push/prisma CLI는 directUrl 사용. 스키마는 `npm run build`에 포함된 `prisma db push --skip-generate`가 자동 적용하므로 별도 db push 불필요 (아래 3번 레거시 단계는 SQLite 시절 절차 — 이제 무시). 기존 SQLite 데이터는 이전하지 않기로 함(사용자 선택), 백업은 /tmp/dev.db.backup-*.
+
 1. Copy env file from the main checkout:
    - `cp /Users/littlemac/Documents/Codex/2026-09-14/files-pasted-by-the-user-pdf/.env.local .env.local`    - It contains `DATABASE_URL` (SQLite file URL), `GEMINI_API_KEY`, and an optional commented-out `GEMINI_MODEL`. Never commit or print the values.
 2. Install dependencies with npm (project uses a `package-lock.json`):
