@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "next dev",
-    "build": "prisma generate && prisma db push --skip-generate && next build",
+    "build": "prisma generate && DIRECT_URL=${DIRECT_URL:-$(node scripts/direct-url.mjs)} prisma db push --skip-generate && next build",
     "start": "next start",
     "lint": "tsc --noEmit"
   },
