@@ -629,7 +629,7 @@ nav.topbar-nav { display: none; }
 /* ============================================================
    Hero scroll-story scene (강의자료 3D → AI → 시험지 3D)
    ============================================================ */
-.hero-sticky { position: sticky; top: 0; height: 100svh; display: flex; align-items: flex-start; padding-top: calc(64px + var(--space-5)); overflow: clip; }
+.hero-sticky { position: sticky; top: 0; height: 100svh; display: flex; align-items: flex-start; padding-top: calc(70px + var(--space-5)); overflow: clip; }
 .hero-inner {
   display: grid; grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
   align-items: center; gap: clamp(24px, 4vw, 56px); width: 100%;
