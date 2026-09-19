@@ -117,6 +117,11 @@ h1, h2, h3 { overflow-wrap: anywhere; word-break: keep-all; }
 }
 .brand { font-size: var(--text-lg); font-weight: 700; letter-spacing: -0.02em; flex-shrink: 0; }
 .brand span { color: var(--accent); }
+/* Center nav links: brand (left) | nav (true center) | auth menu (right).
+   Absolute centering keeps the links at the page midpoint regardless of how
+   wide the logo and auth pill are; at <640px the nav hides anyway.
+   (.topbar's position:sticky already acts as the containing block.) */
+nav.topbar-nav { position: absolute; left: 50%; transform: translateX(-50%); }
 /* PDF2Exam wordmark logo (black text + red "2", transparent-background PNG).
    Height-fixed so the topbar keeps its 64px rhythm at any viewport width. */
 .brand-logo { display: block; height: 56px; width: auto; }
@@ -445,6 +450,7 @@ nav .active { color: var(--text-primary); font-weight: 500; }
    exit link's line box sits at the TOP of its stretched box and looks raised. */
 .exam-topbar nav { align-items: center; }
 .exam-topbar-meta { display: flex; align-items: center; gap: var(--space-2); min-width: 0; flex: 1; justify-content: center; }
+.exam-topbar nav { position: static; transform: none; }
 .exam-doc-name { color: var(--text-tertiary); font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40vw; }
 .exam-saved-badge { flex-shrink: 0; padding: 3px 10px; border-radius: var(--radius-pill); background: var(--success-soft); color: #1E7A38; font-size: var(--text-xs); font-weight: 600; }
 .exam-model-badge { flex-shrink: 0; padding: 3px 10px; border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent); font-size: var(--text-xs); font-weight: 600; white-space: nowrap; }
@@ -561,7 +567,7 @@ nav .active { color: var(--text-primary); font-weight: 500; }
 @media (max-width: 639px) {
   .topbar, .hero, .section-container { width: calc(100% - 32px); }
   .topbar { height: 56px; }
-  nav { display: none; }
+nav.topbar-nav { display: none; }
   body { font-size: 15px; }
   .hero h1 { letter-spacing: -0.03em; }
   .hero-cta-row .btn { flex: 1 1 100%; }

@@ -40,7 +40,7 @@ export default function Home() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/pdf2exam-logo.png" alt="PDF2Exam" className="brand-logo" />
         </Link>
-        <nav aria-label="주요 메뉴">
+        <nav className="topbar-nav" aria-label="주요 메뉴">
           <a href="#story">이용 방법</a>
           <a href="#library">문제은행</a>
         </nav>
