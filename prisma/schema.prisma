@@ -9,6 +9,8 @@ datasource db {
 
 model Document {
   id             String         @id @default(cuid())
+  // Supabase auth user id. Null = auth disabled / legacy / anonymous upload.
+  userId         String?
   originalName   String
   storageKey     String
   extractionState String         @default("PENDING")
@@ -18,6 +20,8 @@ model Document {
   updatedAt      DateTime       @updatedAt
   pages          DocumentPage[]
   questionSets   QuestionSet[]
+
+  @@index([userId])
 }
 
 model DocumentPage {
@@ -34,6 +38,9 @@ model DocumentPage {
 model QuestionSet {
   id             String           @id @default(cuid())
   documentId     String
+  // Supabase auth user id — denormalized from Document for cheap per-user
+  // listing/filtering. Null = auth disabled / legacy / sample sets.
+  userId         String?
   questionType   String
   difficulty     String
   requestedCount Int
@@ -47,6 +54,8 @@ model QuestionSet {
   document       Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
   questions      Question[]
   attempts       Attempt[]
+
+  @@index([userId])
 }
 
 model Question {
@@ -75,12 +84,16 @@ model Question {
 model Attempt {
   id            String   @id @default(cuid())
   questionSetId String
+  // Supabase auth user id. Null = auth disabled / legacy / anonymous attempt.
+  userId        String?
   startedAt     DateTime @default(now())
   submittedAt   DateTime?
   totalScore    Float?
   maxScore      Float?
   questionSet   QuestionSet @relation(fields: [questionSetId], references: [id], onDelete: Cascade)
   answers       Answer[]
+
+  @@index([userId])
 }
 
 model Answer {

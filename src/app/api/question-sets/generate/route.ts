@@ -2,6 +2,7 @@ import { z } from "zod";
 import { AIServiceError, createAIService } from "@/lib/ai";
 import { difficultySchema, questionTypeSchema, reasoningTypeSchema, type QuizQuestion } from "@/lib/questions";
 import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
@@ -30,12 +31,18 @@ export async function POST(request: Request) {
   }
 
   const { documentId, questionType, count, difficulty } = parsed.data;
+  const userId = await getAuthUserId();
   const document = await prisma.document.findUnique({
     where: { id: documentId },
     include: { pages: { orderBy: { pageNumber: "asc" } } },
   });
 
   if (!document) return Response.json({ error: "업로드된 문서를 찾을 수 없습니다." }, { status: 404 });
+  // Users may only generate from documents they uploaded themselves. Anonymous
+  // documents (auth disabled / legacy) stay usable only while auth is off.
+  if (userId && document.userId && document.userId !== userId) {
+    return Response.json({ error: "다른 사용자의 문서에는 접근할 수 없습니다." }, { status: 403 });
+  }
 
   const sourceText = document.pages
     .filter((page) => page.text.trim())
@@ -46,6 +53,7 @@ export async function POST(request: Request) {
   const questionSet = await prisma.questionSet.create({
     data: {
       documentId,
+      userId: userId ?? document.userId,
       questionType,
       difficulty,
       requestedCount: count,

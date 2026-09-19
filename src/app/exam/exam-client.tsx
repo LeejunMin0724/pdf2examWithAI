@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GeneratedPreview } from "@/components/generated-preview";
 import { QuizSession, type GradeResponse } from "@/components/quiz-session";
+import { AuthMenu } from "@/components/auth-menu";
 import { sampleQuestions, toQuizQuestion, type QuizQuestion } from "@/lib/questions";
 
 type LoadedQuestionSet = {
@@ -175,7 +176,10 @@ async function loadQuestionSetResponse<T extends LoadedQuestionSet>(response: Re
 function TopBar({ documentName, savedAttemptId, modelInfo }: { documentName: string; savedAttemptId?: string | null; modelInfo?: { displayName?: string; fallback?: boolean } }) {
   return (
     <header className="topbar exam-topbar">
-      <Link className="brand" href="/">시험<span>노트</span></Link>
+      <Link className="brand" href="/" aria-label="PDF2Exam 홈">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/pdf2exam-logo.png" alt="PDF2Exam" className="brand-logo" />
+      </Link>
       <div className="exam-topbar-meta" title={documentName}>
         {documentName && <span className="exam-doc-name">{documentName}</span>}
         {modelInfo?.displayName && (
@@ -188,6 +192,7 @@ function TopBar({ documentName, savedAttemptId, modelInfo }: { documentName: str
       </div>
       <nav aria-label="시험 메뉴">
         <Link href="/">종료</Link>
+        <AuthMenu />
       </nav>
     </header>
   );

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { AIServiceError, createAIService } from "@/lib/ai";
 import { questionSchema } from "@/lib/questions";
 import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
@@ -14,9 +15,15 @@ export async function POST(request: Request) {
 
   const answer = await prisma.answer.findUnique({
     where: { attemptId_questionId: { attemptId: parsed.data.attemptId, questionId: parsed.data.questionId } },
-    include: { question: true },
+    include: { question: true, attempt: { select: { userId: true } } },
   });
   if (!answer) return Response.json({ error: "답안을 찾을 수 없습니다." }, { status: 404 });
+
+  // Signed-in users can only re-grade answers of their own attempts.
+  const userId = await getAuthUserId();
+  if (userId && answer.attempt.userId && answer.attempt.userId !== userId) {
+    return Response.json({ error: "다른 사용자의 답안은 재채점할 수 없습니다." }, { status: 403 });
+  }
 
   const question = questionSchema.parse({
     id: answer.question.id,

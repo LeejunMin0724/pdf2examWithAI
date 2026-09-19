@@ -2,6 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/supabase-server";
 import { MAX_PDF_SIZE_BYTES, MIN_EXTRACTED_TEXT_LENGTH, PdfExtractionError, extractPdfPages, isPdfSignature } from "@/lib/pdf-extractor";
 
 export const runtime = "nodejs";
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (!isPdfSignature(bytes)) return Response.json({ error: "올바른 PDF 파일이 아닙니다." }, { status: 400 });
+
+  // Associate the upload with the signed-in user (null when auth is disabled).
+  const userId = await getAuthUserId();
 
   const documentId = randomUUID();
   const uploadsDirectory = path.join(process.cwd(), "storage", "uploads");
@@ -38,6 +42,7 @@ export async function POST(request: Request) {
       await prisma.document.create({
         data: {
           id: documentId,
+          userId,
           originalName: file.name,
           storageKey: `uploads/${documentId}.pdf`,
           extractionState: "COMPLETE",

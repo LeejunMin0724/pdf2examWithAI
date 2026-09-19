@@ -32,7 +32,10 @@ export function GeneratedPreview({ set, backHref = "/#upload", onBack }: Generat
   return (
     <div className="exam-shell generated-preview-shell">
       <header className="topbar exam-topbar">
-        <Link className="brand" href="/">시험<span>노트</span></Link>
+        <Link className="brand" href="/" aria-label="PDF2Exam 홈">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/pdf2exam-logo.png" alt="PDF2Exam" className="brand-logo" />
+        </Link>
         <div className="exam-topbar-meta" title={set.documentName}>
           <span className="exam-doc-name">{set.documentName}</span>
           {set.generatedModelName && (

@@ -99,7 +99,7 @@ const storySteps: StoryStep[] = [
     id: "result",
     number: "04",
     title: "채점 결과로 복습합니다.",
-    copy: "객관식은 즉시 채점되고, 서술형은 AI가 루브릭 기준으로 점수를 매기고 한국어 피드백을 남깁니다. 틀린 문제는 문제은행에서 언제든 다시 풀 수 있습니다.",
+    copy: "객관식은 즉시 채점되고, 서술형은 AI가 루브릭 기준으로 점수를 매기고 자연스러운 피드백을 남깁니다. 틀린 문제는 문제은행에서 언제든 다시 풀 수 있습니다.",
     visual: (
       <div className="story-result">
         <div className="story-result-score"><b>6<i> / 7점</i></b><span>AI 채점 완료</span></div>

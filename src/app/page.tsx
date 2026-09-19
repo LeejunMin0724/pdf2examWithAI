@@ -10,6 +10,7 @@ import { HeroScene } from "@/components/hero-scene";
 import { StickyStory } from "@/components/sticky-story";
 import { type PreviewState } from "@/components/pdf-upload";
 import { GeneratedPreview } from "@/components/generated-preview";
+import { AuthMenu } from "@/components/auth-menu";
 
 export default function Home() {
   const [libraryRefreshToken, setLibraryRefreshToken] = useState(0);
@@ -35,12 +36,15 @@ export default function Home() {
       <ScrollReveal />
 
       <header className="topbar">
-        <Link className="brand" href="/#top">시험<span>노트</span></Link>
+        <Link className="brand" href="/#top" aria-label="PDF2Exam 홈">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/pdf2exam-logo.png" alt="PDF2Exam" className="brand-logo" />
+        </Link>
         <nav aria-label="주요 메뉴">
           <a href="#story">이용 방법</a>
           <a href="#library">문제은행</a>
         </nav>
-        <Link className="btn btn-primary btn-small topbar-cta" href="/exam">시험 보기</Link>
+        <AuthMenu />
       </header>
 
       {/* Scroll-story hero: the section is tall, its content stays pinned (sticky)

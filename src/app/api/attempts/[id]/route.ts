@@ -1,5 +1,6 @@
 import { questionSchema, type Question } from "@/lib/questions";
 import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
@@ -36,6 +37,13 @@ export async function GET(_request: Request, context: RouteContext) {
   });
 
   if (!attempt) return Response.json({ error: "학습 결과를 찾을 수 없습니다." }, { status: 404 });
+
+  // Signed-in users can only read their own attempts (ownerless attempts from
+  // the pre-auth era stay readable, matching the rest of the scoping rules).
+  const userId = await getAuthUserId();
+  if (userId && attempt.userId && attempt.userId !== userId) {
+    return Response.json({ error: "다른 사용자의 학습 결과에는 접근할 수 없습니다." }, { status: 403 });
+  }
 
   const questions = attempt.questionSet.questions.map((question) => toQuestion(question, attempt.questionSet.document.originalName));
   const answerByQuestionId = new Map(attempt.answers.map((answer) => [answer.questionId, answer]));

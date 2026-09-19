@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "PDF2Exam Runtime Architecture",
+    "output": "pdf2exam-architecture.html",
+    "quality_profile": "showcase",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "views": [
+      { "id": "request-path", "label": "Core request path", "focus": ["browser", "nextjs", "sqlite"], "note": "Upload to question bank: the primary user request path." },
+      { "id": "ai-pipeline", "label": "AI generation path", "focus": ["nextjs", "gemini", "openrouter", "storage"], "note": "PDF text to questions, with the quality-first model fallback chain." },
+      { "id": "auth-path", "label": "Auth path", "focus": ["browser", "supabase", "nextjs"], "note": "Session cookies refreshed by middleware and verified server-side." }
+    ]
+  },
+  "components": [
+    { "id": "browser", "type": "frontend", "label": "Browser", "sublabel": "PDF2Exam UI", "pos": [40, 300], "size": [130, 64] },
+    { "id": "supabase", "type": "security", "label": "Supabase Auth", "sublabel": "email + anonymous", "pos": [420, 110], "size": [160, 64], "tag": "guest supported" },
+    { "id": "nextjs", "type": "backend", "label": "Next.js Server", "sublabel": "API routes :3000", "pos": [420, 300], "size": [160, 72] },
+    { "id": "gemini", "type": "cloud", "label": "Gemini API", "sublabel": "quality-first pool", "pos": [700, 110], "size": [160, 64], "tag": "429 -> fallback" },
+    { "id": "openrouter", "type": "cloud", "label": "OpenRouter", "sublabel": "free model fallback", "pos": [920, 300], "size": [160, 64], "tag": "last resort" },
+    { "id": "sqlite", "type": "database", "label": "SQLite (Prisma)", "sublabel": "question bank / attempts", "pos": [420, 490], "size": [160, 64] },
+    { "id": "storage", "type": "database", "label": "File Storage", "sublabel": "storage/uploads PDF", "pos": [700, 490], "size": [160, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "PDF2Exam local runtime (Node.js)", "wraps": ["nextjs", "sqlite", "storage"] },
+    { "kind": "security-group", "label": "userId scoping", "wraps": ["sqlite", "storage"] }
+  ],
+  "connections": [
+    { "id": "browser-to-next", "from": "browser", "to": "nextjs", "label": "HTTPS fetch", "variant": "emphasis" },
+    { "id": "browser-to-supabase", "from": "browser", "to": "supabase", "label": "session cookies", "variant": "security", "fromSide": "top", "toSide": "left", "via": [[105, 142], [420, 142]], "labelSegment": 1, "labelDy": -10 },
+    { "id": "supabase-to-next", "from": "supabase", "to": "nextjs", "label": "token verify", "variant": "security", "labelDy": 24 },
+    { "id": "next-to-gemini", "from": "nextjs", "to": "gemini", "label": "generate questions", "variant": "emphasis" },
+    { "id": "next-to-openrouter", "from": "nextjs", "to": "openrouter", "label": "all Gemini failed", "variant": "dashed" },
+    { "id": "next-to-sqlite", "from": "nextjs", "to": "sqlite", "label": "Prisma ORM", "labelDy": 24 },
+    { "id": "next-to-storage", "from": "nextjs", "to": "storage", "label": "PDF originals", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Request path", "items": ["Browser -> Next.js API routes", "Prisma persists question sets and attempts in SQLite"] },
+    { "dot": "emerald", "title": "AI generation", "items": ["PDF text is extracted server-side (pdf.js), never sent as a file", "Quality-first Gemini model pool; 429/503 triggers bounded fallback", "If every Gemini model is exhausted, OpenRouter free models serve"] },
+    { "dot": "rose", "title": "Security & ownership", "items": ["Supabase email + anonymous (guest) sessions", "Middleware refreshes session tokens on every request", "All user data is scoped by userId; cross-user access returns 403"] }
+  ]
+}

@@ -4,6 +4,7 @@ import { gradeObjectiveAnswer } from "@/lib/grading";
 import { isMvpQuestionType } from "@/lib/question-sets";
 import { questionSchema, sampleQuestions, toDifficulty, type Question } from "@/lib/questions";
 import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
@@ -38,9 +39,14 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "답안 형식이 올바르지 않습니다." }, { status: 400 });
 
   const questionSetId = parsed.data.questionSetId === "sample" ? await ensureSampleQuestionSet() : parsed.data.questionSetId;
+  const userId = await getAuthUserId();
   const questionSet = await prisma.questionSet.findUnique({ where: { id: questionSetId }, include: { document: true, questions: true } });
   if (!questionSet) return Response.json({ error: "문제 세트를 찾을 수 없습니다." }, { status: 404 });
   if (questionSet.status !== "COMPLETE") return Response.json({ error: "아직 풀 수 없는 문제 세트입니다." }, { status: 409 });
+  // Signed-in users can only submit answers to their own sets.
+  if (userId && questionSet.userId && questionSet.userId !== userId) {
+    return Response.json({ error: "다른 사용자의 문제 세트에는 답안을 제출할 수 없습니다." }, { status: 403 });
+  }
 
   // MVP supports MULTIPLE_CHOICE and SUBJECTIVE only; skip legacy rows of removed types.
   const mvpQuestions = questionSet.questions.filter((question) => isMvpQuestionType(question.type));
@@ -54,6 +60,7 @@ export async function POST(request: Request) {
   const attempt = await prisma.attempt.create({
     data: {
       questionSetId,
+      userId,
       answers: {
         create: parsed.data.answers.map((answer) => {
           const question = questionById.get(answer.questionId)!;

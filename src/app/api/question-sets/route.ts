@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
@@ -17,8 +18,11 @@ const questionSetSummarySchema = z.object({
 });
 
 export async function GET() {
+  // Signed-in users see only their own sets; anonymous visitors keep seeing the
+  // shared (userId: null) sets exactly as before auth existed.
+  const userId = await getAuthUserId();
   const questionSets = await prisma.questionSet.findMany({
-    where: { status: "COMPLETE" },
+    where: { status: "COMPLETE", userId: userId ?? null },
     orderBy: { createdAt: "desc" },
     take: 30,
     include: {
