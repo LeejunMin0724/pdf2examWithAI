@@ -182,6 +182,12 @@ AIRequestLog — AI 호출 감사 로그 (연산/프로바이더/모델/토큰/�
 - Google이 공식 remaining-RPD API를 제공하지 않으므로 쿼터는 **추정치**로만 관리 (`usageMetadata`를 쿼터로 사용하지 않음)
 - 사고 토큰 제어: EASY 생성 `thinkingLevel: low`, HARD `medium` (채점은 `low`) — 비용 절감
 
+### 배포 (Vercel)
+
+- GitHub `main`에 push하면 Vercel이 자동으로 빌드·배포합니다 (`prisma generate` → DB 스키마 동기화 → `next build`)
+- **Vercel Hobby(무료) 플랜 배포 한도: 하루 100회** — push마다 1회 소모되므로 잦은 push는 주의. 한도 초과 시 그날은 더 배포할 수 없습니다 (빌드 큐만 쌓이고 다음날 재개)
+- 배포 실패 시 사이트는 이전 성공 배포를 그대로 유지합니다 (다운타임 없음)
+
 ### 하루 요청량 (무료 티어 기준)
 
 전부 **무료 티어**에서 운영되며, 서버가 보수적 로컬 카운터로 일일 예산을 관리합니다 (카운터는 UTC 자정 리셋, 동시 요청까지 포함해 계산).
