@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Session, User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { isSupabaseConfigured } from "@/lib/supabase-env";
+import { toAuthEmail, validateLoginId } from "@/lib/username-auth";
 
 type AuthState = {
   /** Signed-in Supabase user, or null when logged out / auth disabled. */
@@ -12,8 +13,9 @@ type AuthState = {
   isLoading: boolean;
   /** False while Supabase env vars are unset — the app runs without login. */
   isEnabled: boolean;
-  signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUpWithPassword: (email: string, password: string) => Promise<{ error: string | null; needsEmailConfirm: boolean }>;
+  /** `loginId` is the 아이디 the user chose (an email keeps working). */
+  signInWithPassword: (loginId: string, password: string) => Promise<{ error: string | null }>;
+  signUpWithPassword: (loginId: string, password: string) => Promise<{ error: string | null; needsEmailConfirm: boolean }>;
   signInAsGuest: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 };
@@ -85,21 +87,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => authListener.subscription.unsubscribe();
   }, []);
 
-  const signInWithPassword = useCallback(async (email: string, password: string) => {
+  const signInWithPassword = useCallback(async (loginId: string, password: string) => {
+    const invalid = validateLoginId(loginId);
+    if (invalid) return { error: invalid };
     const supabase = createSupabaseBrowserClient();
     // Grab the guest merge token while the anonymous session still exists.
     const mergeToken = await fetchGuestMergeToken();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // 아이디 → credential address (see src/lib/username-auth.ts).
+    const { error } = await supabase.auth.signInWithPassword({ email: toAuthEmail(loginId), password });
     if (error) return { error: translateAuthError(error.message) };
     await redeemGuestMergeToken(mergeToken);
     return { error: null };
   }, []);
 
-  const signUpWithPassword = useCallback(async (email: string, password: string) => {
+  const signUpWithPassword = useCallback(async (loginId: string, password: string) => {
+    const invalid = validateLoginId(loginId);
+    if (invalid) return { error: invalid, needsEmailConfirm: false };
     const supabase = createSupabaseBrowserClient();
     // Grab the guest merge token while the anonymous session still exists.
     const mergeToken = await fetchGuestMergeToken();
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email: toAuthEmail(loginId), password });
     if (error) return { error: translateAuthError(error.message), needsEmailConfirm: false };
     // If email confirmation is on, the session is null until the user confirms.
     const needsEmailConfirm = !data.session;
@@ -137,9 +144,13 @@ export function useAuth(): AuthState {
 }
 
 function translateAuthError(message: string): string {
-  if (/invalid login credentials/i.test(message)) return "이메일 또는 비밀번호가 올바르지 않습니다.";
-  if (/email not confirmed/i.test(message)) return "이메일 인증 후 로그인할 수 있습니다. 메일함을 확인해 주세요.";
-  if (/already registered/i.test(message)) return "이미 가입된 이메일입니다. 로그인해 주세요.";
+  if (/invalid login credentials/i.test(message)) return "아이디 또는 비밀번호가 올바르지 않습니다.";
+  if (/email not confirmed/i.test(message))
+    return "이메일 확인 기능이 켜져 있어 로그인할 수 없습니다. Supabase → Authentication → Sign In / Providers에서 Confirm email을 꺼 주세요.";
+  if (/already registered|already been registered|user already exists/i.test(message))
+    return "이미 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.";
+  if (/unable to validate email|invalid.*email/i.test(message))
+    return "아이디는 영문 소문자·숫자·_·- 로 3~20자까지 사용할 수 있습니다.";
   if (/rate limit/i.test(message)) return "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
   if (/password/i.test(message) && /at least|should be|least/i.test(message)) return "비밀번호는 6자 이상이어야 합니다.";
   if (/anonymous sign-ins? (are|is) disabled/i.test(message))

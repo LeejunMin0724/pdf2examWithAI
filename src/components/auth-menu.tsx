@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { AuthModal } from "@/components/auth-modal";
+import { toDisplayId } from "@/lib/username-auth";
 
 /**
  * Topbar slot for authentication. Shows nothing while auth is disabled or the
  * session is still loading (so the topbar never changes shape unexpectedly),
- * a 로그인 button for guests, and the user's email + logout for members.
+ * a 로그인 button for guests, and the user's 아이디 + logout for members.
  */
 export function AuthMenu() {
   const { user, isLoading, isEnabled, signOut } = useAuth();
@@ -37,10 +38,11 @@ export function AuthMenu() {
     );
   }
 
-  // Anonymous guest users have no email; show an explicit 게스트 label instead
-  // of an empty pill (their avatar initial also can't come from an email).
+  // Anonymous guest users have no account name; show an explicit 게스트 label
+  // instead of an empty pill. Everyone else sees the 아이디 they picked —
+  // toDisplayId strips the synthetic credential domain (lib/username-auth).
   const isAnonymous = user.is_anonymous === true;
-  const emailLabel = isAnonymous ? "게스트" : (user.email ?? "내 계정");
+  const accountLabel = isAnonymous ? "게스트" : (toDisplayId(user.email) ?? "내 계정");
 
   // Guests don't get the tiny logout dropdown (it renders as a mysterious
   // near-empty bar); clicking the pill opens the login dialog instead so they
@@ -73,8 +75,8 @@ export function AuthMenu() {
         aria-expanded={menuOpen}
         onClick={() => setMenuOpen((open) => !open)}
       >
-        <span className="auth-menu-avatar" aria-hidden="true">{emailLabel.charAt(0).toUpperCase()}</span>
-        <span className="auth-menu-email">{emailLabel}</span>
+        <span className="auth-menu-avatar" aria-hidden="true">{accountLabel.charAt(0).toUpperCase()}</span>
+        <span className="auth-menu-email">{accountLabel}</span>
       </button>
       {menuOpen && (
         <div className="auth-menu-dropdown" role="menu">

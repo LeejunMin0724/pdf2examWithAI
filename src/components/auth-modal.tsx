@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/auth-provider";
+import { validateLoginId } from "@/lib/username-auth";
 
 type AuthModalProps = {
   open: boolean;
@@ -17,7 +18,8 @@ type AuthModalProps = {
 export function AuthModal({ open, onClose }: AuthModalProps) {
   const { signInWithPassword, signUpWithPassword, signInAsGuest } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("");
+  // The login ID the user chose (no email required — see lib/username-auth).
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   // 비밀번호 is visible by default; checking the box hides it (per user request).
   const [showPassword, setShowPassword] = useState(true);
@@ -30,7 +32,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
   useEffect(() => {
     if (open) {
       setMode("login");
-      setEmail("");
+      setLoginId("");
       setPassword("");
       setShowPassword(true);
       setError(null);
@@ -60,23 +62,30 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
     if (isSubmitting) return;
     setError(null);
     setInfo(null);
+    // Check the 아이디 before touching the network so the message is instant.
+    const invalidId = validateLoginId(loginId);
+    if (invalidId) {
+      setError(invalidId);
+      return;
+    }
     setIsSubmitting(true);
     try {
       if (mode === "login") {
-        const { error: signInError } = await signInWithPassword(email.trim(), password);
+        const { error: signInError } = await signInWithPassword(loginId, password);
         if (signInError) {
           setError(signInError);
           return;
         }
         onClose();
       } else {
-        const { error: signUpError, needsEmailConfirm } = await signUpWithPassword(email.trim(), password);
+        const { error: signUpError, needsEmailConfirm } = await signUpWithPassword(loginId, password);
         if (signUpError) {
           setError(signUpError);
           return;
         }
         if (needsEmailConfirm) {
-          setInfo("가입 완료! 이메일로 보내드린 인증 링크를 확인한 후 로그인해 주세요.");
+          // Synthetic IDs have no inbox, so a confirmation mail can never arrive.
+          setInfo("아이디는 만들어졌지만 Supabase의 이메일 확인 기능이 켜져 있어 로그인할 수 없습니다. Supabase → Authentication → Sign In / Providers에서 Confirm email을 꺼 주세요.");
           setMode("login");
         } else {
           onClose();
@@ -121,18 +130,23 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
         <p className="auth-modal-sub">
           {mode === "login"
             ? "내 문제은행과 학습 기록을 그대로 불러옵니다."
-            : "아이디(이메일)와 비밀번호만으로 계정을 만들 수 있습니다."}
+            : "원하는 아이디와 비밀번호만 입력하면 계정이 만들어집니다."}
         </p>
 
         <form onSubmit={handleSubmit}>
           <label className="auth-field">
             <span>아이디</span>
             <input
-              type="email"
+              type="text"
               required
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={40}
+              placeholder={mode === "login" ? "아이디" : "영문 소문자·숫자·_·- 3~20자"}
+              value={loginId}
+              onChange={(event) => setLoginId(event.target.value)}
             />
           </label>
           <label className="auth-field">
