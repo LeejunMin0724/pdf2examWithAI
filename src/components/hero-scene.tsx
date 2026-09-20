@@ -244,7 +244,7 @@ export function HeroScene() {
     <div className="hero-scene" ref={rootRef} aria-hidden="true">
       <svg className="hs-path-svg" viewBox="0 0 560 520" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <linearGradient id="hs-path-grad" x1="233" y1="296" x2="412" y2="162" gradientUnits="userSpaceOnUse">
+          <linearGradient id="hs-path-grad" x1="262" y1="232" x2="308" y2="152" gradientUnits="userSpaceOnUse">
             <stop stopColor="#9CC4FF" stopOpacity="0.25" />
             <stop offset="0.5" stopColor="#5CA0FF" />
             <stop offset="1" stopColor="#0A6BE8" />
@@ -252,7 +252,7 @@ export function HeroScene() {
         </defs>
         <path
           className="hs-path"
-          d="M 233 296 C 288 280, 297 240, 325 208 C 349 181, 376 170, 412 162"
+          d="M 262 232 C 292 214, 300 184, 308 152"
           pathLength={1}
           strokeDasharray={1}
           stroke="url(#hs-path-grad)"

@@ -37,7 +37,7 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
   /* Spacing (8px scale) */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
-  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-9: 36px; --space-10: 40px;
   --space-12: 48px; --space-16: 64px; --space-20: 80px; --space-24: 96px;
   /* Typography */
   --text-xs: 12px; --text-sm: 14px; --text-md: 16px; --text-lg: 18px;
@@ -100,7 +100,7 @@ h1, h2, h3 { overflow-wrap: anywhere; word-break: keep-all; }
    Topbar
    ============================================================ */
 .topbar {
-  width: min(var(--page-max), calc(100% - 48px));
+  width: min(calc(var(--page-max) + 240px), calc(100% - clamp(48px, 8vw, 96px)));
   height: 70px;
   margin: auto;
   display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
@@ -141,13 +141,19 @@ nav .active { color: var(--text-primary); font-weight: 500; }
    Sections / headings
    ============================================================ */
 .section-container { width: min(var(--page-max), calc(100% - 48px)); margin: 0 auto; }
-/* Scroll-story hero: tall section, content pinned while the scene scrubs */
-.hero { width: min(var(--page-max), calc(100% - 48px)); margin: 0 auto; height: 235vh; }
-.eyebrow { color: var(--accent); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.08em; margin: 0 0 var(--space-3); }
+/* Scroll-story hero: tall section, content pinned while the scene scrubs.
+   Wider than other sections (--page-max +240px) so the two-column composition
+   uses more of the viewport on large screens; the fluid gutter (max(24px, 4vw)
+   per side, expressed via the 100% term) keeps a comfortable minimum margin on
+   narrow desktop windows (resized Safari etc.) without a hard-coded margin. */
+.hero { width: min(calc(var(--page-max) + 240px), calc(100% - clamp(48px, 8vw, 96px))); margin: 0 auto; height: 235vh; }
+.eyebrow { color: var(--accent); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.08em; margin: 0 0 var(--space-5); }
 .hero h1 { margin: 0; font-size: clamp(40px, 5vw, 60px); font-weight: 600; line-height: 1.08; letter-spacing: -0.04em; }
 .hero h1 em { font-style: normal; color: var(--accent); }
-.hero-copy { color: var(--text-secondary); font-size: var(--text-lg); line-height: 1.6; margin: var(--space-5) 0 0; max-width: 480px; }
-.hero-cta-row { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-8); }
+/* Calm, spacious text block: headline → description 32px, description → CTA 36px
+   (was 20/20 — the hero had global whitespace but a cramped text column). */
+.hero-copy { color: var(--text-secondary); font-size: var(--text-lg); line-height: 1.6; margin: var(--space-8) 0 0; max-width: 480px; }
+.hero-cta-row { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-9); }
 .upload-section { padding: clamp(48px, 8vw, 96px) 0; background: var(--surface); }
 .examples-section { padding: clamp(48px, 8vw, 96px) 0; background: var(--surface); }
 .library { padding: clamp(48px, 8vw, 96px) 0; }
@@ -559,20 +565,42 @@ nav .active { color: var(--text-primary); font-weight: 500; }
 @media (max-width: 1023px) {
   .question-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* Sticky story stacks on tablet/mobile (§18) — same step concept, less scroll.
-     Pinned but content-sized: stage above, text below, clear of the fixed topbar. */
+     Pinned but content-sized: text first (설명), then the stage (예시 카드) below,
+     clear of the fixed topbar. */
   .story-track { height: 380vh; }
   .story-layout {
     grid-template-columns: 1fr;
-    align-content: center;
-    gap: var(--space-6);
-    padding: 76px 0 24px;
+    /* align-content: start — centering overflows upward when the stacked
+       content (stage + text) exceeds the pinned viewport height, pushing the
+       step text under the fixed topbar where it gets clipped mid-scroll. */
+    align-content: start;
+    gap: var(--space-5);
+    /* Top padding clears the fixed topbar (70px desktop / 56px ≤639px) with
+       breathing room; the bottom padding absorbs the leftover viewport space. */
+    padding: calc(70px + 24px) 0 48px;
   }
+  @media (max-width: 639px) {
+    .story-layout { padding-top: calc(56px + 24px); }
+  }
+  /* Mobile order: 설명(텍스트) → 예시 카드(비주얼+도트). 데스크탑 DOM/2열은 그대로. */
+  .story-visual { order: 2; }
+  .story-steps { order: 1; }
+  /* Compact scene cards: the tallest scene (시험 예시) plus the text block must fit
+     inside the pinned viewport (100svh − topbar − paddings) or the card bottom gets
+     clipped. Smaller card padding + capped stage height keep all four scenes within
+     budget without changing their look on desktop. */
+  .story-doc, .story-quiz, .story-exam, .story-result { padding: var(--space-5); }
+  .story-stage { max-height: calc(100svh - 70px - 48px - 48px - 240px); }
+  .story-stage > .story-scene { max-height: 100%; }
   .story-stage { min-height: 0; }
   .story-step { justify-content: flex-start; }
 }
 
 @media (max-width: 639px) {
-  .topbar, .hero, .section-container { width: calc(100% - 32px); }
+  /* Slightly wider mobile gutters (was 16px/side): more breathing room while
+     text and example cards keep the same shared container, so their alignment
+     ratio is unchanged. */
+  .topbar, .hero, .section-container { width: calc(100% - 48px); }
   .topbar { height: 56px; }
 nav.topbar-nav { display: none; }
   body { font-size: 15px; }
@@ -628,17 +656,17 @@ nav.topbar-nav { display: none; }
 /* ============================================================
    Hero scroll-story scene (강의자료 3D → AI → 시험지 3D)
    ============================================================ */
-.hero-sticky { position: sticky; top: 0; height: 100svh; display: flex; align-items: flex-start; padding-top: calc(70px + var(--space-5)); overflow: clip; }
+.hero-sticky { position: sticky; top: 0; height: 100svh; display: flex; align-items: flex-start; padding-top: calc(70px + clamp(28px, 6vh, 64px)); overflow: clip; }
 .hero-inner {
   display: grid; grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
-  align-items: center; gap: clamp(24px, 4vw, 56px); width: 100%;
+  align-items: center; gap: clamp(32px, 5vw, 72px); width: 100%;
 }
 .hero-copy-col { max-width: 560px; }
 .hero-scene-col { min-width: 0; }
 
 .hero-scene {
-  position: relative; width: min(100%, 560px); aspect-ratio: 560 / 520;
-  justify-self: end;
+  position: relative; width: min(100%, 620px); aspect-ratio: 560 / 520;
+  justify-self: end; margin-right: clamp(0px, 2vw, 32px);
 }
 .hs-path-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hs-path { stroke-dashoffset: 1; opacity: 0; }
@@ -646,7 +674,10 @@ nav.topbar-nav { display: none; }
 .hs-object svg { display: block; width: 100%; height: auto; }
 .hs-pdf { left: 6%; top: 38%; width: 46%; }
 .hs-pdf svg { filter: drop-shadow(0 30px 28px rgba(30, 64, 124, 0.16)); }
-.hs-paper { right: 4%; top: 7%; width: 44%; }
+/* In-place transformation: the exam paper rises where the PDF dissolved
+   (same footprint, slightly taller sheet), so the visual never leans left
+   mid-scroll with an empty spot where the PDF used to be. */
+.hs-paper { left: 8%; top: 27%; width: 48%; }
 .hs-paper svg { filter: drop-shadow(0 26px 30px rgba(30, 64, 124, 0.13)); }
 
 .hs-float { animation: hs-float 6.5s ease-in-out infinite alternate; }
@@ -657,7 +688,7 @@ nav.topbar-nav { display: none; }
 }
 
 .hs-glow {
-  position: absolute; left: 34%; top: 26%; width: 44%; aspect-ratio: 1 / 1;
+  position: absolute; left: 8%; top: 30%; width: 44%; aspect-ratio: 1 / 1;
   background: radial-gradient(closest-side, rgba(92, 160, 255, 0.5), rgba(92, 160, 255, 0.18) 55%, transparent 72%);
   filter: blur(14px);
   opacity: 0; will-change: transform, opacity;
@@ -683,7 +714,9 @@ nav.topbar-nav { display: none; }
 /* Static fallback (≤1023px or prefers-reduced-motion): full composition,
    no scroll story — content stays available without the animation (§18/§19). */
 @media (max-width: 1023px) {
-  .hero { height: auto; padding: var(--space-5) 0 var(--space-20); }
+  /* Mobile hero: bottom padding reduced 80→48px — the next section adds its
+     own 64px top padding, so the old value made a ~144px dead seam. */
+  .hero { height: auto; padding: var(--space-5) 0 var(--space-12); }
   .hero-sticky { position: relative; height: auto; overflow: visible; padding-top: 0; }
   /* On small screens the two-icon scene sits directly under the headline copy
      and ABOVE the CTA row, so the primary action closes the hero. */
