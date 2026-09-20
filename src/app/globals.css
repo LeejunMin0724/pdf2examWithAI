@@ -126,9 +126,8 @@ h1, h2, h3 { overflow-wrap: anywhere; word-break: keep-all; }
    (.topbar's position:sticky already acts as the containing block.) */
 nav.topbar-nav { position: absolute; left: 50%; transform: translateX(-50%); }
 /* PDF2Exam wordmark logo (black text + red "2", transparent-background PNG).
-   Height-fixed so the topbar keeps its 64px rhythm at any viewport width. */
-.brand-logo { display: block; height: 56px; width: auto; }
-@media (max-width: 640px) { .brand-logo { height: 42px; } }
+   Height-fixed so the topbar keeps its 64px rhythm at any viewport width. */.brand-logo { display: block; height: 53px; width: auto; }
+  @media (max-width: 640px) { .brand-logo { height: 40px; } }
 /* ~10% upscale of the auth pill and its dropdown inside the topbar */
 .auth-menu-trigger { font-size: calc(var(--text-sm) * 1.1); padding: 5px var(--space-3) 5px 5px; }
 .auth-menu-avatar { width: 31px; height: 31px; font-size: calc(var(--text-xs) * 1.1); }
