@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUserId } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
+// Model generation walks the priority pool with bounded retries, so a single
+// request can outlive the serverless default (10s) on a cold Vercel function.
+export const maxDuration = 60;
 
 const generateRequestSchema = z.object({
   documentId: z.string().min(1),

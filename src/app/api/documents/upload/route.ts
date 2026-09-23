@@ -6,6 +6,25 @@ import { getAuthUserId } from "@/lib/supabase-server";
 import { MAX_PDF_SIZE_BYTES, MIN_EXTRACTED_TEXT_LENGTH, PdfExtractionError, extractPdfPages, isPdfSignature } from "@/lib/pdf-extractor";
 
 export const runtime = "nodejs";
+// Large lecture PDFs take well over the serverless default (10s) to parse on a
+// cold Vercel function. Raising it here only affects the hosted deployment.
+export const maxDuration = 60;
+
+// The PDF/extraction copies on disk are archival only: everything the app needs
+// afterwards (pages, question sets, attempts) lives in the database. Serverless
+// hosts mount the project directory read-only, so a failed write must not fail
+// the upload — otherwise uploads break on Vercel while working locally.
+async function persistUploadArtifacts(uploadsDirectory: string, documentId: string, bytes: Uint8Array, originalName: string, pages: { pageNumber: number; text: string }[]) {
+  const pdfPath = path.join(uploadsDirectory, `${documentId}.pdf`);
+  const extractionPath = path.join(uploadsDirectory, `${documentId}.json`);
+  try {
+    await mkdir(uploadsDirectory, { recursive: true });
+    await writeFile(pdfPath, bytes);
+    await writeFile(extractionPath, JSON.stringify({ originalName, pages }, null, 2));
+  } catch (error) {
+    console.warn("[documents/upload] archival write skipped:", error instanceof Error ? error.message : error);
+  }
+}
 
 export async function POST(request: Request) {
   const formData = await request.formData().catch(() => null);
@@ -34,9 +53,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "추출할 텍스트가 거의 없습니다. 현재는 스캔 PDF/OCR을 지원하지 않습니다." }, { status: 422 });
     }
 
-    await mkdir(uploadsDirectory, { recursive: true });
-    await writeFile(pdfPath, bytes);
-    await writeFile(extractionPath, JSON.stringify({ originalName: file.name, pages }, null, 2));
+    await persistUploadArtifacts(uploadsDirectory, documentId, bytes, file.name, pages);
 
     try {
       await prisma.document.create({
