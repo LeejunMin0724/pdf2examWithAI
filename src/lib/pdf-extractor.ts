@@ -1,4 +1,3 @@
-import path from "node:path";
 import { getDocument, type PDFDocumentLoadingTask } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { MAX_PDF_PAGES, MIN_EXTRACTED_TEXT_LENGTH } from "@/lib/pdf-limits";
 
@@ -16,13 +15,20 @@ export async function extractPdfPages(pdfBytes: Uint8Array): Promise<ExtractedPd
   let pdf;
   let loadingTask: PDFDocumentLoadingTask;
   try {
-    loadingTask = getDocument({
-      data: extractionBytes,
-      standardFontDataUrl: path.join(path.dirname(require.resolve("pdfjs-dist/package.json")), "standard_fonts") + path.sep,
-    });
+    // No `standardFontDataUrl`: it only matters for rendering glyphs with
+    // non-embedded fonts, and resolving it through `require.resolve` breaks in
+    // the production bundle (webpack inlines the call into a numeric module id,
+    // so path.join throws "must be of type string"). Text extraction is
+    // unaffected — verified same character counts with and without it.
+    loadingTask = getDocument({ data: extractionBytes });
     pdf = await loadingTask.promise;
   } catch (error) {
     console.error("[pdf-extractor] getDocument failed:", error);
+    const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    // A broken parser on this host must not masquerade as a broken PDF.
+    if (error instanceof TypeError || /ERR_INVALID_ARG_TYPE|Cannot find module|worker/i.test(detail)) {
+      throw new PdfExtractionError("PDF 해석 엔진을 초기화하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
     throw new PdfExtractionError("PDF 파일을 읽을 수 없습니다.");
   }
 
