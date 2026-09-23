@@ -10,7 +10,12 @@ const nextConfig: NextConfig = {
   // upload failed with `Setting up fake worker failed`. Force the worker (and
   // the standard-font data it looks up) into the upload function's bundle.
   outputFileTracingIncludes: {
+    // Every route that parses a PDF must be listed here.
     "/api/documents/upload": [
+      "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
+      "./node_modules/pdfjs-dist/standard_fonts/**/*",
+    ],
+    "/api/documents/import": [
       "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
       "./node_modules/pdfjs-dist/standard_fonts/**/*",
     ],

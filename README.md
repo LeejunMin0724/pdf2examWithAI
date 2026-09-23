@@ -244,7 +244,29 @@ npm run lint       # tsc --noEmit
 
 > **주의**: `next.config.ts`의 `serverExternalPackages: ["pdfjs-dist"]`를 제거하면 PDF 업로드가 항상 500 에러가 납니다 (Turbopack에서 pdf.js 워커 동적 import 실패).
 
+> **주의**: `serverExternalPackages`와 함께 있는 `outputFileTracingIncludes`도 지우면 안 됩니다. pdf.js는 런타임에 `await import("./pdf.worker.mjs")`로 워커를 읽는데 이 import는 Next의 파일 추적에 잡히지 않아, 배포 서버 함수 번들에서 워커가 빠지고 모든 업로드가 `Setting up fake worker failed` → "PDF 파일을 읽을 수 없습니다" 로 실패합니다.
+
 > Supabase를 켜려면 대시보드 → Authentication → Sign In / Up에서 **Anonymous sign-in**을 활성화하세요.
+
+> 4MB를 넘는 PDF 업로드를 켜려면 `supabase/storage-setup.sql`을 SQL Editor에서 한 번 실행하세요 (아래 **대용량 업로드** 참고).
+
+---
+
+## 대용량 업로드 (4MB 초과)
+
+Vercel 함수는 요청 본문이 **4.5MB**를 넘으면 앱 코드에 닿기 전에 거부합니다. 그래서 업로드 경로가 파일 크기로 나뉩니다.
+
+| 파일 크기 | 경로 |
+|---|---|
+| 4MB 이하 | 브라우저 → `POST /api/documents/upload` (multipart, 기존 방식) |
+| 4MB 초과 | 브라우저 → Supabase Storage 직접 업로드 → `POST /api/documents/import` (서버가 내려받아 파싱) |
+
+- 두 경로 모두 **같은 추출 파이프라인**(`src/lib/pdf-extractor.ts`)을 쓰고, 페이지는 DB(`document.pages`)에 저장되므로 이후 흐름은 동일합니다.
+- 저장 경로는 `"<user id>/<document id>.pdf"` 이고, RLS 정책이 본인 폴더만 허용합니다 (게스트 포함).
+- 4MB 초과 파일은 로그인(또는 게스트 로그인)이 필요합니다. 상한은 20MB / 200페이지.
+
+**설정 (1회)**: Supabase Dashboard → SQL Editor → `supabase/storage-setup.sql` 붙여넣고 Run.
+실행하지 않으면 작은 파일은 정상이고, 큰 파일만 "파일 저장소가 아직 준비되지 않았습니다" 안내로 멈춥니다.
 
 ---
 

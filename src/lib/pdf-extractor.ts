@@ -1,9 +1,9 @@
 import path from "node:path";
 import { getDocument, type PDFDocumentLoadingTask } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { MAX_PDF_PAGES, MIN_EXTRACTED_TEXT_LENGTH } from "@/lib/pdf-limits";
 
-export const MAX_PDF_SIZE_BYTES = 20 * 1024 * 1024;
-export const MAX_PDF_PAGES = 200;
-export const MIN_EXTRACTED_TEXT_LENGTH = 30;
+// Limits live in a client-safe module; re-exported here for existing callers.
+export { MAX_PDF_PAGES, MAX_PDF_SIZE_BYTES, MAX_PDF_SIZE_MB, MIN_EXTRACTED_TEXT_LENGTH } from "@/lib/pdf-limits";
 
 export type ExtractedPdfPage = { pageNumber: number; text: string };
 

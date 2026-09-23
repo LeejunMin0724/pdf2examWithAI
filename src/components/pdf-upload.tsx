@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type QuizQuestion } from "@/lib/questions";
+import { useAuth } from "@/components/auth-provider";
+import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { isSupabaseConfigured } from "@/lib/supabase-env";
+import { MAX_PDF_SIZE_BYTES, MAX_PDF_SIZE_MB } from "@/lib/pdf-limits";
+import { DIRECT_UPLOAD_THRESHOLD_BYTES, PDF_STORAGE_BUCKET, pdfStoragePath, translateStorageUploadError } from "@/lib/pdf-storage";
 
 type UploadResult = { documentId: string; originalName: string; pageCount: number; extractedCharacterCount: number };
 type GeneratedResult = { questionSetId: string; questions: QuizQuestion[]; displayName?: string; fallback?: boolean };
@@ -27,6 +32,7 @@ function friendlyGenerateError(raw: string) {
 }
 
 export function PdfUpload({ onQuestionsGenerated, onGenerated }: PdfUploadProps) {
+  const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [result, setResult] = useState<UploadResult | null>(null);
@@ -54,7 +60,54 @@ export function PdfUpload({ onQuestionsGenerated, onGenerated }: PdfUploadProps)
   }, [result, generated, refreshModelPreview]);
 
   function chooseFile(file: File | undefined | null) {
-    if (file && file.type === "application/pdf") setSelectedFile(file);
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      setError("PDF 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    if (file.size > MAX_PDF_SIZE_BYTES) {
+      setError(`PDF는 최대 ${MAX_PDF_SIZE_MB}MB까지 업로드할 수 있습니다.`);
+      return;
+    }
+    setError(null);
+    setSelectedFile(file);
+  }
+
+  /** Small files: a single multipart request through this app's own route. */
+  async function uploadThroughApi(file: File): Promise<UploadResult> {
+    const formData = new FormData();
+    formData.set("file", file);
+    const response = await fetch("/api/documents/upload", { method: "POST", body: formData });
+    const payload = (await response.json().catch(() => null)) as (UploadResult & { error?: string }) | null;
+    if (!response.ok) {
+      if (response.status === 413) throw new Error("파일이 너무 커서 전송되지 않았습니다. 로그인 후 다시 시도해 주세요.");
+      throw new Error(payload?.error ?? "업로드에 실패했습니다.");
+    }
+    return payload as UploadResult;
+  }
+
+  /**
+   * Large files: the browser uploads straight to Supabase Storage and the server
+   * fetches it back for parsing. Hosted functions cap the request body at 4.5MB,
+   * so a PDF this size can never travel through our own API route.
+   */
+  async function uploadThroughStorage(file: File): Promise<UploadResult> {
+    if (!user) throw new Error(`4MB를 넘는 PDF는 로그인한 뒤 업로드할 수 있습니다. (최대 ${MAX_PDF_SIZE_MB}MB)`);
+    const supabase = createSupabaseBrowserClient();
+    const storagePath = pdfStoragePath(user.id, crypto.randomUUID());
+    const { error: storageError } = await supabase.storage
+      .from(PDF_STORAGE_BUCKET)
+      .upload(storagePath, file, { contentType: "application/pdf", upsert: false });
+    if (storageError) throw new Error(translateStorageUploadError(storageError.message));
+
+    const response = await fetch("/api/documents/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storagePath, originalName: file.name }),
+    });
+    const payload = (await response.json().catch(() => null)) as (UploadResult & { error?: string }) | null;
+    if (!response.ok) throw new Error(payload?.error ?? "업로드에 실패했습니다.");
+    return payload as UploadResult;
   }
 
   async function upload() {
@@ -64,12 +117,8 @@ export function PdfUpload({ onQuestionsGenerated, onGenerated }: PdfUploadProps)
     setGenerated(null);
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.set("file", selectedFile);
-      const response = await fetch("/api/documents/upload", { method: "POST", body: formData });
-      const payload = (await response.json()) as UploadResult & { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "업로드에 실패했습니다.");
-      setResult(payload);
+      const useStorage = selectedFile.size > DIRECT_UPLOAD_THRESHOLD_BYTES && isSupabaseConfigured();
+      setResult(useStorage ? await uploadThroughStorage(selectedFile) : await uploadThroughApi(selectedFile));
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "업로드에 실패했습니다.");
     } finally {
@@ -115,7 +164,10 @@ export function PdfUpload({ onQuestionsGenerated, onGenerated }: PdfUploadProps)
     >
       <p className="dropzone-icon" aria-hidden="true">↥</p>
       <p className="dropzone-title">{selectedFile ? selectedFile.name : "PDF 파일을 끌어다 놓거나 선택하세요"}</p>
-      <p className="dropzone-hint">텍스트 기반 PDF · 최대 20MB · 200페이지</p>
+      <p className="dropzone-hint">텍스트 기반 PDF · 최대 {MAX_PDF_SIZE_MB}MB · 200페이지</p>
+      {selectedFile && selectedFile.size > DIRECT_UPLOAD_THRESHOLD_BYTES && !result && (
+        <p className="dropzone-hint">큰 파일은 {user ? "저장소로 전송" : "로그인 후 업로드"}됩니다</p>
+      )}
       <button className="btn btn-secondary" onClick={() => inputRef.current?.click()} type="button">파일 선택</button>
     </div>}
 
