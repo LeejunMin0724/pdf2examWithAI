@@ -19,13 +19,20 @@ export function QuizSession({ questions, questionSetId, documentName, initialGra
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRetrying, setIsRetrying] = useState<string | null>(null);
   const [showJumpNav, setShowJumpNav] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const activeQuestion = questions[activeIndex];
   const response = responses[activeQuestion.id] ?? "";
   const answeredCount = questions.filter((question) => !responseIsBlank(responses[question.id])).length;
+  const unansweredCount = questions.length - answeredCount;
   const isLastQuestion = activeIndex === questions.length - 1;
 
   function saveResponse(value: string) { setResponses((current) => ({ ...current, [activeQuestion.id]: value })); }
-  function moveToQuestion(index: number) { setActiveIndex(index); }
+  function moveToQuestion(index: number) { setShowSubmitConfirm(false); setActiveIndex(index); }
+  function handleSubmitClick() {
+    // Unanswered questions no longer block submission — ask once, then grade everything.
+    if (unansweredCount > 0) setShowSubmitConfirm(true);
+    else void submitAnswers();
+  }
 
   async function retrySubjective(questionId: string) {
     if (!gradeResult) return;
@@ -76,10 +83,10 @@ export function QuizSession({ questions, questionSetId, documentName, initialGra
       <button className="btn btn-ghost" onClick={() => setGradeResult(null)}>답안 다시 확인</button>
     </div>
     <div className="result-list">{gradeResult.results.map((result, index) => <article className="result-card" key={result.questionId}>
-      <div className="result-card-top"><span>문제 {index + 1} · {typeLabel[result.type]}</span>{result.status === "AI_GRADE_FAILED" ? <strong className="badge badge-error">× AI 채점 실패</strong> : result.type === "SUBJECTIVE" ? <strong className="badge badge-success">✓ AI 채점 완료</strong> : <strong className={`badge ${result.isCorrect ? "badge-success" : "badge-error"}`}>{result.isCorrect ? "✓ 정답" : "× 오답"}</strong>}</div>
+      <div className="result-card-top"><span>문제 {index + 1} · {typeLabel[result.type]}</span>{responseIsBlank(result.studentResponse) ? <strong className="badge badge-error">미응답 · 0점</strong> : result.status === "AI_GRADE_FAILED" ? <strong className="badge badge-error">× AI 채점 실패</strong> : result.type === "SUBJECTIVE" ? <strong className="badge badge-success">✓ AI 채점 완료</strong> : <strong className={`badge ${result.isCorrect ? "badge-success" : "badge-error"}`}>{result.isCorrect ? "✓ 정답" : "× 오답"}</strong>}</div>
       <h3>{result.question}</h3>
-      <dl><div><dt>내 답</dt><dd>{result.studentResponse}</dd></div>{result.type !== "SUBJECTIVE" && result.correctAnswer && <div><dt>정답</dt><dd>{result.correctAnswer}</dd></div>}{result.type === "SUBJECTIVE" && result.score !== null && <div><dt>점수</dt><dd>{result.score} / {result.maxScore}</dd></div>}</dl>
-      {result.feedback && <p className="explanation"><b>{result.status === "AI_GRADE_FAILED" ? "상태" : "AI 피드백"}</b> {result.feedback}</p>}
+      <dl><div><dt>내 답</dt><dd>{result.studentResponse?.trim() ? result.studentResponse : "미응답"}</dd></div>{result.type !== "SUBJECTIVE" && result.correctAnswer && <div><dt>정답</dt><dd>{result.correctAnswer}</dd></div>}{result.type === "SUBJECTIVE" && result.score !== null && <div><dt>점수</dt><dd>{result.score} / {result.maxScore}</dd></div>}</dl>
+      {result.feedback && <p className="explanation"><b>{responseIsBlank(result.studentResponse) ? "안내" : result.status === "AI_GRADE_FAILED" ? "상태" : result.type === "SHORT_ANSWER" ? "판정" : "AI 피드백"}</b> {result.feedback}</p>}
       {result.status === "AI_GRADE_FAILED" && <button className="btn btn-ghost retry-button" disabled={isRetrying === result.questionId} onClick={() => retrySubjective(result.questionId)} type="button">{isRetrying === result.questionId ? "재채점 중..." : "AI 재채점"}</button>}
       <p className="explanation"><b>해설</b> {result.explanation}</p>
     </article>)}</div>
@@ -109,18 +116,27 @@ export function QuizSession({ questions, questionSetId, documentName, initialGra
       <h1 className="exam-question">{activeQuestion.question}</h1>
 
       {activeQuestion.type === "MULTIPLE_CHOICE" && <div className="options" role="radiogroup" aria-label="객관식 선택지">{activeQuestion.options?.map((option, index) => { const choice = String(index + 1); return <label className={`option ${response === choice ? "selected" : ""}`} key={option}><input checked={response === choice} name={activeQuestion.id} onChange={() => saveResponse(choice)} type="radio" value={choice} /><span className="choice-number">{index + 1}</span><span className="option-text">{option}</span></label>; })}</div>}
+      {activeQuestion.type === "SHORT_ANSWER" && <label className="answer-field"><span>한 단어 또는 짧은 구절로 답하세요</span><input maxLength={60} onChange={(event) => saveResponse(event.target.value)} placeholder="답을 입력하세요." value={response} /><small>{response.length} / 60</small></label>}
       {activeQuestion.type === "SUBJECTIVE" && <label className="answer-field"><span>핵심 개념을 포함해 자유롭게 작성하세요</span><textarea maxLength={2000} onChange={(event) => saveResponse(event.target.value)} placeholder="답안을 입력하세요." rows={8} value={response} /><small>{response.length} / 2,000</small></label>}
+
+      {showSubmitConfirm && unansweredCount > 0 && <div className="submit-confirm" role="alertdialog" aria-label="답하지 않은 문제 확인">
+        <p><b>답하지 않은 문제가 {unansweredCount}개 있습니다.</b> 그대로 제출하면 해당 문제는 0점 처리됩니다. 그대로 제출할까요?</p>
+        <div className="submit-confirm-actions">
+          <button className="btn btn-ghost" disabled={isSubmitting} onClick={() => setShowSubmitConfirm(false)} type="button">계속 풀기</button>
+          <button className="btn btn-primary" disabled={isSubmitting} onClick={() => { setShowSubmitConfirm(false); void submitAnswers(); }} type="button">{isSubmitting ? "채점 중..." : "그대로 제출"}</button>
+        </div>
+      </div>}
 
       <div className="exam-actions">
         <button className="btn btn-secondary" disabled={activeIndex === 0} onClick={() => moveToQuestion(activeIndex - 1)} type="button">이전</button>
         <div className="exam-actions-primary">
           {submitError && <p className="action-help" role="alert">{submitError}</p>}
           {isLastQuestion
-            ? <button className="btn btn-primary" disabled={answeredCount !== questions.length || isSubmitting} onClick={submitAnswers} type="button">{isSubmitting ? "채점 중..." : "답안 제출"}</button>
+            ? <button className="btn btn-primary" disabled={isSubmitting} onClick={handleSubmitClick} type="button">{isSubmitting ? "채점 중..." : "답안 제출"}</button>
             : <button className="btn btn-primary" onClick={() => moveToQuestion(activeIndex + 1)} type="button">다음</button>}
         </div>
       </div>
-      {isLastQuestion && answeredCount !== questions.length && !submitError && <p className="action-help">모든 문제에 답하면 제출할 수 있어요.</p>}
+      {isLastQuestion && unansweredCount > 0 && !showSubmitConfirm && !submitError && <p className="action-help">답하지 않은 문제가 {unansweredCount}개 있습니다. 제출하면 0점 처리됩니다.</p>}
     </article>
   </section>;
 }

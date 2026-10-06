@@ -9,7 +9,7 @@ export async function getQuestionSetQuestions(id: string) {
   });
   if (!questionSet || questionSet.status !== "COMPLETE") return null;
 
-  // MVP supports MULTIPLE_CHOICE and SUBJECTIVE only; skip legacy rows of removed types.
+  // Supported types only; skip legacy rows of removed types.
   const questions = questionSet.questions.filter((question) => isMvpQuestionType(question.type));
 
   return {
@@ -25,7 +25,7 @@ export async function getQuestionSetQuestions(id: string) {
 }
 
 export function isMvpQuestionType(type: string): boolean {
-  return type === "MULTIPLE_CHOICE" || type === "SUBJECTIVE";
+  return type === "MULTIPLE_CHOICE" || type === "SHORT_ANSWER" || type === "SUBJECTIVE";
 }
 
 function toQuizQuestion(question: {

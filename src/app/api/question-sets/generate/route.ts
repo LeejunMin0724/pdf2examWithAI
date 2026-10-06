@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AIServiceError, createAIService } from "@/lib/ai";
 import { difficultySchema, questionTypeSchema, reasoningTypeSchema, type QuizQuestion } from "@/lib/questions";
+import { syncModelHealthFromRecentFailures } from "@/lib/model-health";
 import { prisma } from "@/lib/prisma";
 import { getAuthUserId } from "@/lib/supabase-server";
 
@@ -9,12 +10,29 @@ export const runtime = "nodejs";
 // request can outlive the serverless default (10s) on a cold Vercel function.
 export const maxDuration = 60;
 
+/** The UI offers 3/5/10/15 — the ceiling stays here so a hand-crafted request cannot ask for more. */
+const MAX_QUESTION_COUNT = 15;
+/** Keep the user preference a nudge, not a second prompt (must match the UI limit). */
+const MAX_GUIDE_LENGTH = 300;
+
 const generateRequestSchema = z.object({
   documentId: z.string().min(1),
   questionType: questionTypeSchema,
-  count: z.number().int().min(1).max(20),
+  count: z.number().int().min(1).max(MAX_QUESTION_COUNT),
   difficulty: difficultySchema,
+  /** Optional user preference (topic focus, exclusions, style). */
+  instructions: z.string().trim().max(MAX_GUIDE_LENGTH).optional(),
 });
+
+/**
+ * Model walk budget for this request. maxDuration (60s) is the platform's hard
+ * kill, and the DB writes + response happen AFTER the walk — so the walk gets a
+ * count-scaled slice (output grows with the number of questions) that still
+ * leaves room to persist the result.
+ */
+function generationBudgetMs(count: number) {
+  return Math.min(48_000, 40_000 + count * 600);
+}
 
 type GenerateResponse = {
   questionSetId: string;
@@ -34,6 +52,8 @@ export async function POST(request: Request) {
   }
 
   const { documentId, questionType, count, difficulty } = parsed.data;
+  // One line, no control characters: the guidance lands inside a prompt sent to a model.
+  const instructions = parsed.data.instructions?.replace(/\s+/g, " ").trim() || undefined;
   const userId = await getAuthUserId();
   const document = await prisma.document.findUnique({
     where: { id: documentId },
@@ -65,11 +85,17 @@ export async function POST(request: Request) {
   });
 
   try {
+    // Start the walk from what other instances already learned (recent 429/503
+    // rejections are stored in AIRequestLog) so a cold instance stops promising
+    // — and re-paying for — a model Google is currently rejecting.
+    await syncModelHealthFromRecentFailures();
     const generated = await createAIService().generateQuestions({
       questionType,
       count,
       difficulty,
       sourceText: sourceText.slice(0, 120_000),
+      budgetMs: generationBudgetMs(count),
+      instructions,
     });
     const questions = generated.questions.map((question) => {
       if (question.type !== questionType) {
@@ -77,6 +103,9 @@ export async function POST(request: Request) {
       }
       if (questionType === "MULTIPLE_CHOICE" && (!question.options || !question.correctAnswer)) {
         throw new AIServiceError("객관식 문제의 선택지 또는 정답이 누락되었습니다.", "MALFORMED_RESPONSE");
+      }
+      if (questionType === "SHORT_ANSWER" && !question.correctAnswer?.trim()) {
+        throw new AIServiceError("단답형 문제의 정답이 누락되었습니다.", "MALFORMED_RESPONSE");
       }
       if (questionType === "SUBJECTIVE" && (!question.modelAnswer || !question.gradingRubric?.length)) {
         throw new AIServiceError("서술형 문제의 모범 답안 또는 채점 기준이 누락되었습니다.", "MALFORMED_RESPONSE");

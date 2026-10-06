@@ -292,25 +292,39 @@ export function getDiagnosticsSnapshot(availableIds: Set<string> | null): ModelD
 }
 
 /**
- * The model the NEXT generation request would use, with the Korean reason when
- * the top pick is unavailable and fallback is expected. Pure — no API calls.
+ * The model the NEXT generation request would use, plus WHICH higher-priority
+ * model was skipped and why. The reason used to be read from the model that was
+ * about to be returned (always eligible → always null), so the UI could only say
+ * "상위 모델 일시 사용 불가" while the real cause — a 429 answered seconds ago,
+ * possibly on another instance — stayed invisible. Pure: no API calls.
  */
 export function previewNextModel(availableIds: Set<string> | null, now = Date.now()): {
   model: string;
   displayName: string;
   fallback: boolean;
   fallbackReason: string | null;
+  /** First pool entry that was passed over, with the Korean reason. */
+  skipped: { model: string; displayName: string; reason: string } | null;
 } | null {
+  const diagnostics = getDiagnosticsSnapshot(availableIds);
+  let skipped: { model: string; displayName: string; reason: string } | null = null;
+
   for (const entry of getOrderedPool()) {
-    if (availableIds && !availableIds.has(entry.model)) continue;
-    if (!isModelEligible(entry.model, now)) continue;
-    const reason = getDiagnosticsSnapshot(availableIds).find((d) => d.model === entry.model)?.ineligibleReason ?? null;
-    const higherBlocked = entry.priority > 1;
+    if (availableIds && !availableIds.has(entry.model)) {
+      skipped ??= { model: entry.model, displayName: entry.displayName, reason: "API 키에서 미지원" };
+      continue;
+    }
+    if (!isModelEligible(entry.model, now)) {
+      const reason = diagnostics.find((d) => d.model === entry.model)?.ineligibleReason ?? "일시 사용 불가";
+      skipped ??= { model: entry.model, displayName: entry.displayName, reason };
+      continue;
+    }
     return {
       model: entry.model,
       displayName: entry.displayName,
-      fallback: higherBlocked,
-      fallbackReason: higherBlocked ? (reason ?? "상위 모델 일시 사용 불가") : null,
+      fallback: skipped !== null,
+      fallbackReason: skipped?.reason ?? null,
+      skipped,
     };
   }
   return null;

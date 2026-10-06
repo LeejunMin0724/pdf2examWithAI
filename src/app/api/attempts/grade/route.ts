@@ -7,17 +7,28 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUserId } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
+// A submission can grade subjective answers with the model pool AND run the single
+// short-answer flexibility review — well past the serverless default timeout.
+export const maxDuration = 60;
 
 const gradeRequestSchema = z.object({
   questionSetId: z.string().min(1),
   answers: z.array(z.object({
     questionId: z.string().min(1),
-    response: z.string().trim().min(1).max(2000),
+    // Blank responses are accepted: a user may submit with questions still
+    // unanswered, and those are scored 0 instead of blocking the submission.
+    response: z.string().trim().max(2000),
   })).min(1).max(30),
 });
 
+/** Shown for a question the user submitted without writing anything. */
+const UNANSWERED_FEEDBACK = "답안을 작성하지 않아 0점 처리되었습니다.";
+/** Rule grader said no — the AI review may still turn this into a correct answer. */
+const SHORT_ANSWER_MISMATCH_FEEDBACK = "정답과 일치하지 않습니다. (AI 재판정 대상)";
+const SHORT_ANSWER_ACCEPTED_FEEDBACK = "AI 재판정: 같은 의미의 답으로 인정되었습니다.";
+
 type StoredQuestion = Question & { questionSetId: string };
-type AnswerRecord = { id: string; questionId: string; response: string; gradingStatus: string };
+type AnswerRecord = { id: string; questionId: string; response: string; gradingStatus: string; isCorrect: boolean | null };
 
 type GradeResult = {
   questionId: string;
@@ -64,6 +75,18 @@ export async function POST(request: Request) {
       answers: {
         create: parsed.data.answers.map((answer) => {
           const question = questionById.get(answer.questionId)!;
+          // Unanswered questions are graded immediately (0 points) so we never
+          // spend an AI call on an empty answer.
+          if (!answer.response.trim()) {
+            return {
+              questionId: answer.questionId,
+              response: answer.response,
+              isCorrect: false,
+              score: 0,
+              gradingStatus: "GRADED",
+              feedback: question.type === "MULTIPLE_CHOICE" ? null : UNANSWERED_FEEDBACK,
+            };
+          }
           const objectiveGrade = gradeObjectiveAnswer(question, answer.response);
           return {
             questionId: answer.questionId,
@@ -71,6 +94,10 @@ export async function POST(request: Request) {
             isCorrect: objectiveGrade?.isCorrect ?? null,
             score: objectiveGrade?.score ?? null,
             gradingStatus: objectiveGrade ? "GRADED" : "PENDING_AI_GRADE",
+            feedback:
+              question.type === "SHORT_ANSWER" && objectiveGrade && !objectiveGrade.isCorrect
+                ? SHORT_ANSWER_MISMATCH_FEEDBACK
+                : null,
           };
         }),
       },
@@ -79,7 +106,61 @@ export async function POST(request: Request) {
   });
 
   await gradeSubjectiveAnswers(attempt.answers, questionById);
+  // Flexibility pass: exactly one AI call, after every answer has a verdict, so
+  // near-miss short answers can be accepted without a call per question.
+  await reviewShortAnswers(attempt.answers, questionById);
   return buildGradeResponse(attempt.id, questionById);
+}
+
+/**
+ * Re-judges rule-rejected short answers in a single AI call and promotes the ones
+ * the reviewer accepts. Purely additive: an exact match is never second-guessed,
+ * and any failure inside leaves the deterministic verdicts untouched.
+ */
+async function reviewShortAnswers(answers: AnswerRecord[], questionById: Map<string, Question>) {
+  const reviewable = answers.flatMap((answer) => {
+    const question = questionById.get(answer.questionId);
+    if (!question || question.type !== "SHORT_ANSWER") return [];
+    if (answer.isCorrect !== false || !answer.response.trim()) return [];
+    return [{ answer, question }];
+  });
+  if (reviewable.length === 0) return;
+
+  try {
+    const review = await createAIService().reviewShortAnswers({
+      items: reviewable.map(({ answer, question }) => ({
+        question: question.question,
+        correctAnswer: question.correctAnswer ?? "",
+        acceptedAnswers: question.acceptedAnswers ?? [],
+        studentAnswer: answer.response,
+        ruleCorrect: false,
+      })),
+    });
+    for (const index of review.accepted) {
+      const entry = reviewable[index];
+      if (!entry) continue;
+      await prisma.answer.update({
+        where: { id: entry.answer.id },
+        data: { score: entry.question.maxScore, isCorrect: true, feedback: SHORT_ANSWER_ACCEPTED_FEEDBACK },
+      });
+    }
+    console.info(`[grade] short-answer review (${review.model}): ${review.accepted.length}/${reviewable.length} accepted`);
+    await prisma.aIRequestLog.create({
+      data: { operation: "REVIEW_SHORT_ANSWER", provider: review.provider, model: review.model, success: true },
+    }).catch(() => undefined);
+  } catch (error) {
+    // Never fail a submission over the flexibility pass — the rule verdicts stand.
+    console.warn(`[grade] short-answer review failed: ${error instanceof Error ? error.message.slice(0, 160) : "unknown error"}`);
+    await prisma.aIRequestLog.create({
+      data: {
+        operation: "REVIEW_SHORT_ANSWER",
+        provider: process.env.OPENROUTER_API_KEY?.trim() ? "openrouter" : "google",
+        model: error instanceof AIServiceError && error.model ? error.model : "pool-exhausted",
+        success: false,
+        errorCode: error instanceof AIServiceError ? error.code : "UNKNOWN",
+      },
+    }).catch(() => undefined);
+  }
 }
 
 async function gradeSubjectiveAnswers(answers: AnswerRecord[], questionById: Map<string, Question>) {

@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const questionTypeSchema = z.enum([
   "MULTIPLE_CHOICE",
+  /** One short answer (term/number/symbol). Rule-graded, then AI-reviewed once. */
+  "SHORT_ANSWER",
   "SUBJECTIVE",
 ]);
 
@@ -77,6 +79,19 @@ export type QuestionGenerationInput = {
   count: number;
   difficulty: Question["difficulty"];
   sourceText: string;
+  /**
+   * Wall-clock budget for the model walk. The API route scales it with the
+   * requested count (bigger responses take longer, and the DB writes still have
+   * to fit inside the platform's function limit); omitted → the provider default.
+   */
+  budgetMs?: number;
+  /**
+   * Optional user preference for this generation (topic focus, exclusions, style).
+   * It may only steer what is asked, never how grading rules work: the material
+   * stays the only source of truth, and one-answer/explanation/format rules win
+   * over any instruction that tries to change them.
+   */
+  instructions?: string;
 };
 
 export type SubjectiveGradeInput = {
@@ -95,6 +110,27 @@ export const subjectiveGradeResponseSchema = z.object({
 
 export type SubjectiveGradeResponse = z.infer<typeof subjectiveGradeResponseSchema>;
 
+/** One rule-graded short answer handed to the (single) AI flexibility review. */
+export type ShortAnswerReviewItem = {
+  question: string;
+  correctAnswer: string;
+  acceptedAnswers: string[];
+  studentAnswer: string;
+  /** Verdict from the deterministic grader — the reviewer may only ADD to it. */
+  ruleCorrect: boolean;
+};
+
+/**
+ * The reviewer answers with the indices it accepts. Only rejections can be
+ * revised: a literal match against the model answer needs no second opinion, so
+ * the AI can widen the accepted set but never invalidate an exact answer.
+ */
+export const shortAnswerReviewResponseSchema = z.object({
+  accepted: z.array(z.number().int().min(0)).max(60),
+});
+
+export type ShortAnswerReviewResponse = z.infer<typeof shortAnswerReviewResponseSchema>;
+
 export const quizQuestionSchema = questionSchema.omit({
   correctAnswer: true,
   acceptedAnswers: true,
@@ -111,6 +147,20 @@ export function toQuizQuestion(question: Question): QuizQuestion {
 }
 
 export const sampleQuestions: Question[] = [
+  {
+    id: "sample-short-answer",
+    type: "SHORT_ANSWER",
+    question: "세포막을 통해 물이 삼투압 차이에 따라 이동하는 현상을 무엇이라고 하는가?",
+    correctAnswer: "삼투",
+    acceptedAnswers: ["삼투", "삼투 현상", "osmosis"],
+    explanation: "반투과성 막을 사이에 두고 용질 농도 차이(삼투압 차이)가 생기면 물이 농도가 낮은 쪽에서 높은 쪽으로 이동합니다. 이 현상이 삼투이며, 이동이 멈추는 지점은 양쪽 삼투압이 같아진 평형 상태입니다.",
+    maxScore: 1,
+    difficulty: "EASY",
+    sourcePage: 16,
+    testedConcept: "삼투 현상",
+    reasoningType: "recall",
+    sourcePdf: "생명과학-세포막.pdf",
+  },
   {
     id: "sample-multiple-choice",
     type: "MULTIPLE_CHOICE",

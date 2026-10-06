@@ -330,6 +330,8 @@ nav .active { color: var(--text-primary); font-weight: 500; }
 .upload-success strong { font-size: var(--text-md); overflow-wrap: anywhere; }
 .upload-success > span { color: var(--text-secondary); font-size: var(--text-sm); }
 .model-preview { margin: 0; color: var(--text-secondary); font-size: var(--text-sm); }
+.model-preview-note { margin: 0; color: var(--text-tertiary); font-size: var(--text-xs); }
+.model-preview-note strong { color: var(--text-secondary); font-weight: 600; }
 .model-preview strong { color: var(--accent); font-weight: 600; }
 .model-preview em { font-style: normal; color: var(--text-tertiary); font-size: var(--text-xs); }
 .generation-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
@@ -339,6 +341,15 @@ nav .active { color: var(--text-primary); font-weight: 500; }
   border: 1px solid var(--border); border-radius: 10px; background: var(--background);
   color: var(--text-primary); font: inherit; font-size: var(--text-sm);
 }
+.generation-guide { grid-column: 1 / -1; }
+.generation-guide input {
+  width: 100%; min-width: 0; height: 44px; padding: 0 var(--space-3);
+  border: 1px solid var(--border); border-radius: 10px; background: var(--background);
+  color: var(--text-primary); font: inherit; font-size: var(--text-sm);
+}
+.generation-guide input::placeholder { color: var(--text-tertiary); }
+.generation-guide input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.generation-guide small { color: var(--text-tertiary); font-size: var(--text-xs); text-align: right; }
 .generation-complete { margin: 0; color: var(--success); font-weight: 500; font-size: var(--text-sm); word-break: keep-all; }
 .generation-complete::before { content: "✓ "; }
 
@@ -566,7 +577,11 @@ nav .active { color: var(--text-primary); font-weight: 500; }
 .answer-field input::placeholder, .answer-field textarea::placeholder { color: var(--text-tertiary); }
 .answer-field small { display: block; margin-top: var(--space-2); text-align: right; color: var(--text-tertiary); font-size: var(--text-xs); }
 
+.submit-confirm { display: grid; gap: var(--space-3); margin-top: var(--space-8); padding: var(--space-4); border: 1px solid var(--warning); border-radius: var(--radius-lg); background: var(--warning-soft); }
+.submit-confirm p { margin: 0; color: #8A5200; font-size: var(--text-sm); line-height: 1.6; word-break: keep-all; }
+.submit-confirm-actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
 .exam-actions { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-top: var(--space-8); flex-wrap: wrap; }
+.submit-confirm + .exam-actions { margin-top: var(--space-4); }
 .exam-actions-primary { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
 .action-help { margin: 0; color: var(--error); font-size: var(--text-xs); word-break: keep-all; }
 
@@ -590,7 +605,7 @@ nav .active { color: var(--text-primary); font-weight: 500; }
 .badge { font-size: var(--text-xs); font-weight: 600; padding: 3px 10px; border-radius: var(--radius-pill); }
 .badge-success { color: #1E7A38; background: var(--success-soft); }
 .badge-error { color: #C9332A; background: var(--error-soft); }
-.explanation { margin: var(--space-4) 0 0; color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.6; word-break: keep-all; overflow-wrap: anywhere; }
+.explanation { margin: var(--space-4) 0 0; color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.6; word-break: keep-all; overflow-wrap: anywhere; white-space: pre-line; }
 .retry-button { margin-top: var(--space-3); }
 
 /* ============================================================
@@ -662,6 +677,8 @@ nav.topbar-nav { display: none; }
   .choice-number { width: 24px; height: 24px; font-size: var(--text-xs); }
   .exam-actions { flex-direction: column-reverse; align-items: stretch; }
   .exam-actions .btn, .exam-actions-primary .btn { width: 100%; }
+  .submit-confirm-actions { flex-direction: column-reverse; }
+  .submit-confirm-actions .btn { width: 100%; }
   .exam-actions-primary { margin-left: 0; flex-direction: column-reverse; align-items: stretch; width: 100%; }
   .result-card { padding: var(--space-5); }
   .result-card dl { grid-template-columns: 1fr; }
