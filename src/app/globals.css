@@ -609,6 +609,20 @@ nav .active { color: var(--text-primary); font-weight: 500; }
 .retry-button { margin-top: var(--space-3); }
 
 /* ============================================================
+   Typeset formulas (KaTeX + mhchem) — components/math-text.tsx
+   ============================================================ */
+/* Inline stays on the text baseline: a formula mid-sentence ("물은 $\ce{H2O}$이다")
+   must sit with the surrounding words. KaTeX's default 1.21em is sized for pure
+   math pages, so it is dialled back to blend with 15–16px body text. */
+.math-inline { display: inline-block; max-width: 100%; vertical-align: baseline; }
+.math-inline .katex { font-size: 1.06em; }
+/* A display formula is its own line and scrolls sideways instead of widening
+   the question card on a phone. */
+.math-display { display: block; margin: var(--space-4) 0; padding-bottom: 2px; overflow-x: auto; overflow-y: hidden; text-align: center; }
+.math-display .katex-display { margin: 0; }
+.math-display .katex { font-size: 1.1em; }
+
+/* ============================================================
    Responsive (doc 03 §28: mobile <640, tablet 640–1023, desktop ≥1024)
    ============================================================ */
 @media (max-width: 1023px) {

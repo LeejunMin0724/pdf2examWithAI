@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MathText } from "@/components/math-text";
 import { difficultyLabel, typeLabel } from "@/lib/question-display";
 import { type QuizQuestion } from "@/lib/questions";
 
@@ -81,13 +82,13 @@ export function GeneratedPreview({ set, backHref = "/#upload", onBack }: Generat
                   <span>문제 {index + 1} · {typeLabel[question.type]} · {difficultyLabel[question.difficulty]}</span>
                   {question.sourcePage && <small className="generated-preview-page">PDF {question.sourcePage}쪽</small>}
                 </div>
-                <h3>{question.question}</h3>
+                <h3><MathText text={question.question} /></h3>
                 {question.type === "MULTIPLE_CHOICE" && (
                   <ul className="generated-preview-options">
                     {question.options?.map((option, optionIndex) => (
                       <li key={option}>
                         <span className="choice-number">{optionIndex + 1}</span>
-                        {option}
+                        <MathText text={option} />
                       </li>
                     ))}
                   </ul>
@@ -96,7 +97,7 @@ export function GeneratedPreview({ set, backHref = "/#upload", onBack }: Generat
                   <dl>
                     <div>
                       <dt>채점 기준</dt>
-                      <dd>{(question.gradingRubric ?? []).map((item) => item.criterion).join(" · ")}</dd>
+                      <dd><MathText text={(question.gradingRubric ?? []).map((item) => item.criterion).join(" · ")} /></dd>
                     </div>
                   </dl>
                 )}

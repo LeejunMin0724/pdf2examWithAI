@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { AuthProvider } from "@/components/auth-provider";
+// KaTeX stylesheet (and its woff2 fonts): formulas are rendered by MathText.
+import "katex/dist/katex.min.css";
 import "./globals.css";
 
 export const metadata: Metadata = {

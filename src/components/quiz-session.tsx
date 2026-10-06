@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { type QuizQuestion } from "@/lib/questions";
 import { difficultyLabel, typeLabel } from "@/lib/question-display";
+import { MathText } from "@/components/math-text";
 
 type QuizSessionProps = { questions: QuizQuestion[]; questionSetId?: string; documentName?: string; initialGradeResult?: GradeResponse | null; onSubmitted?: () => void; onGraded?: (result: GradeResponse) => void };
 
@@ -84,11 +85,12 @@ export function QuizSession({ questions, questionSetId, documentName, initialGra
     </div>
     <div className="result-list">{gradeResult.results.map((result, index) => <article className="result-card" key={result.questionId}>
       <div className="result-card-top"><span>문제 {index + 1} · {typeLabel[result.type]}</span>{responseIsBlank(result.studentResponse) ? <strong className="badge badge-error">미응답 · 0점</strong> : result.status === "AI_GRADE_FAILED" ? <strong className="badge badge-error">× AI 채점 실패</strong> : result.type === "SUBJECTIVE" ? <strong className="badge badge-success">✓ AI 채점 완료</strong> : <strong className={`badge ${result.isCorrect ? "badge-success" : "badge-error"}`}>{result.isCorrect ? "✓ 정답" : "× 오답"}</strong>}</div>
-      <h3>{result.question}</h3>
-      <dl><div><dt>내 답</dt><dd>{result.studentResponse?.trim() ? result.studentResponse : "미응답"}</dd></div>{result.type !== "SUBJECTIVE" && result.correctAnswer && <div><dt>정답</dt><dd>{result.correctAnswer}</dd></div>}{result.type === "SUBJECTIVE" && result.score !== null && <div><dt>점수</dt><dd>{result.score} / {result.maxScore}</dd></div>}</dl>
-      {result.feedback && <p className="explanation"><b>{responseIsBlank(result.studentResponse) ? "안내" : result.status === "AI_GRADE_FAILED" ? "상태" : result.type === "SHORT_ANSWER" ? "판정" : "AI 피드백"}</b> {result.feedback}</p>}
+      <h3><MathText text={result.question} /></h3>
+      {/* 내 답은 학생이 직접 입력한 평문 그대로 보여준다(수식 렌더링 없음). */}
+      <dl><div><dt>내 답</dt><dd>{result.studentResponse?.trim() ? result.studentResponse : "미응답"}</dd></div>{result.type !== "SUBJECTIVE" && result.correctAnswer && <div><dt>정답</dt><dd><MathText text={result.correctAnswer} /></dd></div>}{result.type === "SUBJECTIVE" && result.score !== null && <div><dt>점수</dt><dd>{result.score} / {result.maxScore}</dd></div>}</dl>
+      {result.feedback && <p className="explanation"><b>{responseIsBlank(result.studentResponse) ? "안내" : result.status === "AI_GRADE_FAILED" ? "상태" : result.type === "SHORT_ANSWER" ? "판정" : "AI 피드백"}</b> <MathText text={result.feedback} /></p>}
       {result.status === "AI_GRADE_FAILED" && <button className="btn btn-ghost retry-button" disabled={isRetrying === result.questionId} onClick={() => retrySubjective(result.questionId)} type="button">{isRetrying === result.questionId ? "재채점 중..." : "AI 재채점"}</button>}
-      <p className="explanation"><b>해설</b> {result.explanation}</p>
+      <p className="explanation"><b>해설</b> <MathText text={result.explanation} /></p>
     </article>)}</div>
   </section>;
 
@@ -113,9 +115,9 @@ export function QuizSession({ questions, questionSetId, documentName, initialGra
         <span className={`type type-${activeQuestion.type.toLowerCase()}`}>{typeLabel[activeQuestion.type]}</span>
         <span className="exam-question-count">문제 {activeIndex + 1} / {questions.length} · {difficultyLabel[activeQuestion.difficulty]}</span>
       </div>
-      <h1 className="exam-question">{activeQuestion.question}</h1>
+      <h1 className="exam-question"><MathText text={activeQuestion.question} /></h1>
 
-      {activeQuestion.type === "MULTIPLE_CHOICE" && <div className="options" role="radiogroup" aria-label="객관식 선택지">{activeQuestion.options?.map((option, index) => { const choice = String(index + 1); return <label className={`option ${response === choice ? "selected" : ""}`} key={option}><input checked={response === choice} name={activeQuestion.id} onChange={() => saveResponse(choice)} type="radio" value={choice} /><span className="choice-number">{index + 1}</span><span className="option-text">{option}</span></label>; })}</div>}
+      {activeQuestion.type === "MULTIPLE_CHOICE" && <div className="options" role="radiogroup" aria-label="객관식 선택지">{activeQuestion.options?.map((option, index) => { const choice = String(index + 1); return <label className={`option ${response === choice ? "selected" : ""}`} key={option}><input checked={response === choice} name={activeQuestion.id} onChange={() => saveResponse(choice)} type="radio" value={choice} /><span className="choice-number">{index + 1}</span><span className="option-text"><MathText text={option} /></span></label>; })}</div>}
       {activeQuestion.type === "SHORT_ANSWER" && <label className="answer-field"><span>한 단어 또는 짧은 구절로 답하세요</span><input maxLength={60} onChange={(event) => saveResponse(event.target.value)} placeholder="답을 입력하세요." value={response} /><small>{response.length} / 60</small></label>}
       {activeQuestion.type === "SUBJECTIVE" && <label className="answer-field"><span>핵심 개념을 포함해 자유롭게 작성하세요</span><textarea maxLength={2000} onChange={(event) => saveResponse(event.target.value)} placeholder="답안을 입력하세요." rows={8} value={response} /><small>{response.length} / 2,000</small></label>}
 

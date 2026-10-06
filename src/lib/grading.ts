@@ -1,3 +1,4 @@
+import { latexToPlain } from "@/lib/notation";
 import { type Question } from "@/lib/questions";
 
 export type ObjectiveGrade = { isCorrect: boolean; score: number; maxScore: number };
@@ -19,12 +20,13 @@ const TRAILING_PARTICLES = /(이다|였습니다|입니다|인가|이고|은|는
  * a false "정답" here is much worse than a question the reviewer has to rescue.
  *
  * Typography is folded back to ASCII first, because answers/typeset text are
- * written both ways: a question stores "6.02×10²³" or "H₂O" while a student on a
- * keyboard types "6.02x10^23" or "H2O" — NFKC handles the sub/superscripts, and
- * the folds below handle the symbols it leaves alone.
+ * written both ways: a question stores "$\ce{H2O}$", "6.02×10²³" or "H₂O" while a
+ * student on a keyboard types "H2O" or "6.02x10^23" — `latexToPlain` removes the
+ * rendering markup, NFKC handles the sub/superscripts, and the folds below handle
+ * the symbols it leaves alone.
  */
 export function normalizeShortAnswer(value: string) {
-  return value
+  return latexToPlain(value)
     .normalize("NFKC")
     .replace(/[×✕✖]/g, "x")
     .replace(/[·⋅∙]/g, ".")

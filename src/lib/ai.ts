@@ -1,5 +1,5 @@
 import { normalizeShortAnswer } from "@/lib/grading";
-import { formatNotation } from "@/lib/notation";
+import { formatNotation, latexToPlain } from "@/lib/notation";
 import {
   questionGenerationResponseSchema,
   subjectiveGradeResponseSchema,
@@ -98,6 +98,7 @@ const SHORT_ANSWER_REVIEW_SYSTEM = `당신은 대학 시험의 단답형 답안�
 규칙 기반 채점에서 오답으로 처리된 답안이 의미상 정답과 같은지 판단합니다.
 정답으로 인정합니다: 동의어, 널리 쓰이는 약어, 다른 언어 표기(영어/한국어), 단위·기호 표기 차이, 조사·어미 차이, 명백한 오탈자, 정답을 포함한 짧은 구절.
 정답으로 인정하지 않습니다: 다른 개념, 문제의 조건을 벗어난 답, 근거 없는 추측, 정답과 반대되는 내용.
+정답이 $\ce{...}$ 같은 LaTeX 표기로 저장되어 있어도 학생 답안은 평문 표기일 수 있습니다. 표기가 달라도 같은 화학식·수식·기호를 가리키면 같은 답으로 인정합니다(예: 정답 "$\ce{H2O}$" = 학생 답안 "H2O", 정답 "$6.02\times10^{23}$" = "6.02x10^23").
 오직 JSON만 반환하며 설명이나 사고 과정을 노출하지 않습니다.`;
 
 const QUESTION_SYSTEM_ROLE = `당신은 대학 시험 대비 문제를 작성하는 전문 출제 교수입니다.
@@ -143,8 +144,17 @@ HARD는 "개념을 이해하고 사용할 수 있는가"를 확인하는 문제�
 【서술형 규칙】
 개념을 학생의 말로 설명하게 하는 문제를 만듭니다. 개념 설명, 개념 비교, 인과 관계 설명, 과정·기전 설명, 상황 적용, 결과 예측과 이유, 개념 간 관계 연결이 바람직합니다. 짧은 구절을 그대로 옮겨 적는 문제는 피합니다. modelAnswer는 간결한 모범 답안이고, gradingRubric은 정답에 반드시 포함되어야 할 핵심 개념을 항목별로 나열합니다.
 
-【수식·화학식 표기 규칙】
-문제·선택지·정답·해설·모범 답안·채점 기준에 나오는 수식과 화학식은 별도 렌더링 없이 그대로 읽히는 유니코드 평문으로 씁니다. LaTeX($...$, \(...\), \frac, \ce{}, \text{})이나 마크다운(**굵게**)을 절대 쓰지 않습니다. 화학식은 원소 기호와 첨자로 씁니다(예: H₂O, CO₂, CH₃CH₂OH, CaCO₃, Fe³⁺, SO₄²⁻). 수학 표기는 위·아래첨자와 기호를 유니코드로 씁니다(예: sp² 혼성 궤도함수, 10⁻³ M, 6.02×10²³, x², √2, π, Δ, ≤, ≥, ≠, ≈). 반응 화살표는 →, 평형은 ⇌, 온도는 °C나 ℃를 씁니다. 평문만 쓸 수 있는 상황에서도 H2O, sp2처럼 숫자를 그대로 붙이고 ^, _, $, \ 기호는 쓰지 않습니다. 수식이 필요 없는 문제라면 억지로 넣지 않습니다.
+【수식·화학식 표기 규칙 — KaTeX/mhchem】
+이 앱은 수식을 KaTeX로, 화학식을 mhchem으로 렌더링합니다. 그래서 수식·화학식은 LaTeX로 쓰고 문장 안에서는 $...$, 따로 떨어진 줄에서는 $$...$$로 감쌉니다. $ 밖에 LaTeX를 쓰면 글자 그대로 노출되므로 반드시 감쌉니다.
+- 화학식·이온·반응식은 mhchem으로 씁니다: $\ce{H2O}$, $\ce{CO2}$, $\ce{CH3CH2OH}$, $\ce{CaCO3}$, $\ce{Fe^3+}$, $\ce{SO4^2-}$, $\ce{2H2 + O2 -> 2H2O}$, $\ce{N2(g) + 3H2(g) <=> 2NH3(g)}$. 반응 화살표는 $\ce{->}$, 평형은 $\ce{<=>}$로 씁니다.
+- 화학 구조식도 mhchem의 결합 기호로 씁니다: 단일 결합 -, 이중 결합 =, 삼중 결합 #(예: $\ce{CH3-CH2-OH}$, $\ce{CH3-CH=CH-CH3}$, $\ce{CH3-C#CH}$, $\ce{C6H5-OH}$, $\ce{CH3-CH(CH3)-CH3}$, $\ce{[Cu(NH3)4]^2+}$). 가지는 괄호로 묶고, 고리 화합물은 $\ce{C6H6}$처럼 쓰거나 결합 구조로 펼쳐 씁니다.
+- 전하와 동위원소는 캐럿으로 씁니다: $\ce{Na+}$, $\ce{Cl-}$, $\ce{Ca^2+}$, $\ce{PO4^3-}$, $\ce{^{14}_{6}C}$. 위·아래첨자를 써야 할 때도 유니코드가 아니라 LaTeX를 씁니다($\ce{SO4^2-}$, $x^2$, $K_{sp}$).
+- 수학은 LaTeX로 씁니다: $x^2$, $\frac{1}{2}$, $\sqrt{2}$, $6.02\times10^{23}$, $\Delta H$, $\pi r^2$, $\log_{10}$, $\int_0^1 x\,dx$, $\ce{[H+]}$ 대신 $\mathrm{[H^+]}$처럼 화학종이 아니면 mathrm으로 씁니다.
+- 단위·온도·농도는 평문으로 씁니다: 25 °C, 109.5°, 0.1 M, pH 7, sp² 혼성 궤도함수. $\pu{}$는 쓰지 않습니다.
+- 일반 문장은 그대로 평문으로 씁니다. 마크다운(굵게, 제목 기호, 백틱, 목록 기호)은 쓰지 않습니다.
+- 단답형 correctAnswer가 수식·화학식이면 같은 규칙을 따르되, acceptedAnswers에는 LaTeX 없이 키보드로 입력할 수 있는 평문 표기도 함께 넣습니다(예: 정답 "$\ce{H2O}$" → ["H2O", "물", "water"]).
+- 금지: $ 없이 LaTeX 쓰기(H₂O를 $\ce{H2O}$ 없이 쓰거나 \ce{}만 쓰기), 한 문제 안에서 유니코드 첨자(H₂O, Fe³⁺)와 LaTeX를 섞기, 렌더링되지 않는 명령(\chemfig, \includegraphics, \begin{tikzpicture}, \begin{tabular}) 쓰기. 강의 자료에 그림·구조식이 있어도 직접 그리지 말고 문장과 기호로 설명합니다.
+- 수식이 필요 없는 문제라면 억지로 넣지 않습니다.
 
 【해설 작성 규칙 — 문제에 나온 개념 자체를 설명】
 해설은 정답을 알려주는 문장이 아니라 "이 문제가 묻는 개념을 가르치는 글"입니다. 목표는 정답을 맞힌 학생과 틀린 학생 모두가 해설만 읽고 그 개념을 다른 문제에 적용할 수 있게 되는 것입니다. 모든 해설은 이 순서로 씁니다:
@@ -692,7 +702,9 @@ function detectQuestionLanguage(sourceText: string): QuestionOutputLanguage {
 
 function buildShortAnswerReviewPrompt(items: ShortAnswerReviewItem[]) {
   const blocks = items.map((item, index) =>
-    [`[${index}]`, `문제: ${item.question}`, `정답: ${item.correctAnswer}`, item.acceptedAnswers.length ? `인정 답안: ${item.acceptedAnswers.join(" / ")}` : "", `학생 답안: ${item.studentAnswer}`]
+    // The reviewer sees the plain form of a formula: it compares MEANING, and a
+    // student typing on a keyboard never writes \ce{...}. See latexToPlain.
+    [`[${index}]`, `문제: ${item.question}`, `정답: ${latexToPlain(item.correctAnswer)}`, item.acceptedAnswers.length ? `인정 답안: ${item.acceptedAnswers.map(latexToPlain).join(" / ")}` : "", `학생 답안: ${item.studentAnswer}`]
       .filter(Boolean)
       .join("\n"),
   );
@@ -760,7 +772,7 @@ function buildQuestionPrompt(input: QuestionGenerationInput, language: QuestionO
 - Difficulty rule: ${difficultyText === "EASY" ? "EASY checks recall and basic understanding of the important content." : "HARD questions must require genuine understanding and must NOT be solvable by memorizing a sentence from the material. Require at least one of: applying a concept to a new situation, reasoning, comparison, or prediction."}
 - For each question fill in testedConcept (the key concept), reasoningType (one from the list below), and sourcePage (an integer parsed from the material's [Page N] markers; null if unknown).
 - Explanation rule: explain the CONCEPT the question is about (definition, principle, mechanism) and then why that concept leads to this answer, citing the material — 3-6 sentences. Never just restate the answer and never fill the explanation by listing why each wrong option is wrong.
-- Notation rule: write formulas as plain Unicode text (H₂O, sp², Fe³⁺, →, ⇌, ×, 10⁻³) — never LaTeX ($...$, \frac, \ce{}) or markdown.${shortAnswerRuleEn}${guideEn}
+- Notation rule: this app renders math with KaTeX and chemistry with mhchem, so write every formula as LaTeX inside $...$ (a formula on its own line uses $$...$$). Chemistry: $\ce{H2O}$, $\ce{SO4^2-}$, $\ce{Fe^3+}$, $\ce{CH3-CH=CH-CH3}$, $\ce{2H2 + O2 -> 2H2O}$, equilibrium $\ce{<=>}$. Math: $x^2$, $\frac{1}{2}$, $\sqrt{2}$, $6.02\times10^{23}$, $K_{sp}$. Units, temperatures and concentrations stay plain text (25 °C, 0.1 M, pH 7). LaTeX outside $...$ is shown literally — always delimit it. Never emit markdown, never mix Unicode subscripts (H₂O, Fe³⁺) with LaTeX in one question, and never use unsupported packages (\chemfig, \begin{tikzpicture}).${shortAnswerRuleEn}${guideEn}
 - reasoningType list: recall, concept_understanding, comparison, cause_and_effect, application, prediction, mechanism, error_detection, multi_concept_reasoning
 
 Lecture material:
@@ -772,7 +784,7 @@ ${input.sourceText}`;
 - 난이도 규칙: ${difficultyText === "EASY" ? "EASY는 중요한 내용의 기억과 기본 이해를 확인합니다." : "HARD는 개념을 이해해야만 풀리는 문제여야 하며, 암기만으로 풀리면 안 됩니다. 새로운 상황 적용, 추론, 비교, 예측 중 하나 이상을 요구하세요."}
 - 문제마다 testedConcept(핵심 개념), reasoningType(아래 목록 중 하나), sourcePage(강의 자료의 [Page N] 표지에서 추출한 정수, 알 수 없으면 null)를 채웁니다.
 - 해설 규칙: 모든 해설은 문제에 나온 개념 자체(정의·원리·과정)를 설명하고, 그 개념이 왜 이 정답으로 이어지는지와 강의 자료의 근거를 3~6문장으로 풀어 씁니다. 오답 선택지를 나열하거나 "다른 선택지는 …"으로 끝내지 않습니다.
-- 수식 규칙: 화학식·수식은 LaTeX나 마크다운 없이 유니코드 평문으로 씁니다(H₂O, sp², Fe³⁺, →, ⇌, ×, 10⁻³).${shortAnswerRuleKo}${guideKo}
+- 수식 규칙: 화학식·수식은 KaTeX/mhchem용 LaTeX로 쓰고 $...$로 감쌉니다(예: $\ce{H2O}$은 물, $\ce{2H2 + O2 -> 2H2O}$, $\frac{1}{2}$, $x^2$). $ 밖의 LaTeX는 글자 그대로 노출되고, 유니코드 첨자(H₂O)와 LaTeX를 섞지 않으며, 마크다운은 쓰지 않습니다.${shortAnswerRuleKo}${guideKo}
 - reasoningType 목록: recall, concept_understanding, comparison, cause_and_effect, application, prediction, mechanism, error_detection, multi_concept_reasoning
 
 강의 자료:
@@ -788,7 +800,7 @@ function buildGenerationResponseSchema(questionType: QuestionGenerationInput["qu
     type: { type: "STRING", enum: [questionType] },
     question: { type: "STRING" },
     maxScore: { type: "NUMBER", description: "객관식·단답형은 1, 서술형은 5" },
-    explanation: { type: "STRING", description: "문제가 묻는 개념 자체를 정의·원리·과정까지 설명하고, 그 개념이 왜 이 정답으로 이어지는지와 강의 자료의 근거를 3~6문장으로 풀어 쓰는 해설(오답 선택지 나열 금지)" },
+    explanation: { type: "STRING", description: "문제가 묻는 개념 자체를 정의·원리·과정까지 설명하고, 그 개념이 왜 이 정답으로 이어지는지와 강의 자료의 근거를 3~6문장으로 풀어 쓰는 해설(오답 선택지 나열 금지). 수식·화학식은 LaTeX로 $...$ 안에 씀" },
     sourcePage: { type: "INTEGER", nullable: true },
     testedConcept: { type: "STRING" },
     reasoningType: {
@@ -803,7 +815,7 @@ function buildGenerationResponseSchema(questionType: QuestionGenerationInput["qu
         type: "OBJECT",
         properties: {
           ...commonProperties,
-          options: { type: "ARRAY", items: { type: "STRING" }, minItems: 4, maxItems: 4 },
+          options: { type: "ARRAY", items: { type: "STRING" }, minItems: 4, maxItems: 4, description: "선택지 4개. 수식·화학식은 LaTeX로 $...$ 안에 씀" },
           correctAnswer: { type: "STRING", enum: ["0", "1", "2", "3"], description: "정답 선택지의 0부터 시작하는 인덱스" },
         },
         required: [...required, "options", "correctAnswer"],
@@ -813,8 +825,8 @@ function buildGenerationResponseSchema(questionType: QuestionGenerationInput["qu
         type: "OBJECT",
         properties: {
           ...commonProperties,
-          correctAnswer: { type: "STRING", description: "정답 자체만 (설명 없이 용어·이름·수치·기호, 30자 이내)" },
-          acceptedAnswers: { type: "ARRAY", items: { type: "STRING" }, minItems: 1, description: "같은 의미로 인정할 동의어·다른 표기(약어·영어 표기·단위 표기 차이)" },
+          correctAnswer: { type: "STRING", description: "정답 자체만 (설명 없이 용어·이름·수치·기호, 30자 이내). 화학식·수식은 LaTeX로 $\\ce{...}$/$...$ 안에 씀" },
+          acceptedAnswers: { type: "ARRAY", items: { type: "STRING" }, minItems: 1, description: "같은 의미로 인정할 동의어·다른 표기(약어·영어 표기·단위 표기 차이). LaTeX 없는 평문 표기를 반드시 하나 포함(키보드 입력 대비)" },
         },
         required: [...required, "correctAnswer", "acceptedAnswers"],
       }
@@ -822,7 +834,7 @@ function buildGenerationResponseSchema(questionType: QuestionGenerationInput["qu
         type: "OBJECT",
         properties: {
           ...commonProperties,
-          modelAnswer: { type: "STRING" },
+          modelAnswer: { type: "STRING", description: "간결한 모범 답안. 수식·화학식은 LaTeX로 $...$ 안에 씀" },
           gradingRubric: { type: "ARRAY", items: { type: "STRING" }, minItems: 1 },
         },
         required: [...required, "modelAnswer", "gradingRubric"],
@@ -945,8 +957,9 @@ function normalizeGeneratedResponse(raw: unknown, expectedType: QuestionGenerati
     if (typeof normalized.type !== "string" || !QUESTION_TYPES.has(normalized.type)) {
       normalized.type = expectedType;
     }
-    // Notation is typeset ONCE, when the question is stored: the UI renders text
-    // nodes only, so LaTeX/markdown would reach the student as literal characters.
+    // Notation is normalized ONCE, when the question is stored: delimited math
+    // ($...$) and chemistry ($\ce{...}$) are kept for the KaTeX renderer, prose is
+    // typeset in Unicode, and stray markdown is stripped.
     typesetNotation(normalized);
 
     // Legacy/snake_case model outputs → app fields.

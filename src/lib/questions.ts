@@ -198,4 +198,21 @@ export const sampleQuestions: Question[] = [
     reasoningType: "application",
     sourcePdf: "생명과학-세포막.pdf",
   },
+  // 수식·화학식 표기 규칙의 예시: 정답은 mhchem LaTeX로, acceptedAnswers에는
+  // 학생이 키보드로 입력할 평문 표기를 함께 둔다(lib/grading이 LaTeX를 평문으로
+  // 펼쳐 비교하므로 "CO2"로 답해도 정답 처리된다).
+  {
+    id: "sample-short-answer-formula",
+    type: "SHORT_ANSWER",
+    question: "탄소가 산소와 완전 연소할 때 생성되는 기체의 화학식을 쓰시오.",
+    correctAnswer: "$\\ce{CO2}$",
+    acceptedAnswers: ["CO2", "이산화 탄소", "이산화탄소", "carbon dioxide"],
+    explanation: "탄소가 충분한 산소와 반응하면 $\\ce{C + O2 -> CO2}$ 반응이 일어나 이산화 탄소가 생성됩니다. 화학식 $\\ce{CO2}$는 탄소 원자 1개와 산소 원자 2개가 결합한 분자라는 뜻이며, 이 분자 1몰에는 $6.02\\times10^{23}$개의 분자가 들어 있습니다.",
+    maxScore: 1,
+    difficulty: "EASY",
+    sourcePage: 8,
+    testedConcept: "연소 반응과 화학식",
+    reasoningType: "recall",
+    sourcePdf: "일반화학-연소반응.pdf",
+  },
 ];
